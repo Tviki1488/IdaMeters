@@ -44,3 +44,43 @@
         flex-basis: 100%;
     }
 }
+
+/* History: keep the edit form floating above the table */
+.table-wrap td details {
+    position: relative;
+}
+
+.table-wrap td details > form {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    z-index: 100;
+    width: 320px;
+    min-width: 320px !important;
+    margin-top: 0 !important;
+    padding: 16px;
+    background: #ffffff;
+    border: 1px solid #d8e2eb;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(20, 45, 65, 0.16);
+}
+
+/* Keep edit controls neatly arranged */
+.table-wrap td details > form label {
+    display: block;
+    margin-bottom: 12px;
+}
+
+.table-wrap td details > form input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+}
+
+.table-wrap td details > form button {
+    margin-top: 4px;
+}
+
+.table-wrap td details > summary {
+    cursor: pointer;
+}
