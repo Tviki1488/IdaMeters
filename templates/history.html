@@ -1,1 +1,135 @@
-{% extends 'base.html' %}{% block title %}Ajalugu · Forus Arvestid{% endblock %}{% block content %}<div class="page-heading"><div><p class="eyebrow">ARUANDED</p><h1>Näitude ajalugu</h1><p class="muted">Vaata valitud kuu salvestatud näite ja ekspordi need Excelisse.</p></div></div><form class="filter-bar"><label>Arvestuskuu<input type="month" name="period" value="{{ period }}"></label><label>Kaubanduskeskus<select name="center_id"><option value="">Kõik objektid</option>{% for c in centers %}<option value="{{ c.id }}" {% if center_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label><button class="button button-secondary" type="submit">Filtreeri</button><a class="button button-primary" href="{{ url_for('export_xlsx', period=period, center_id=center_id) }}">↓ Ekspordi Excel</a></form><div class="table-wrap"><table><thead><tr><th>Objekt</th><th>Kategooria</th><th>Mõõdik</th><th>Ressurss</th><th>Eelmine</th><th>Praegune</th><th>Tarbitud</th><th>Sisestaja</th></tr></thead><tbody>{% for r in readings %}{% set p = namespace(value=none) %}{% for pr in r.meter.readings %}{% if pr.period < period and (p.value is none or pr.period > p.value.period) %}{% set p.value = pr %}{% endif %}{% endfor %}<tr><td>{{ r.meter.category.center.name }}</td><td>{{ r.meter.category.name }}</td><td>{{ r.meter.name }}</td><td>{{ r.meter.resource_type }}</td><td>{{ p.value.value|num if p.value else '—' }}</td><td><strong>{{ r.value|num }}</strong> {{ r.meter.unit }}</td><td>{{ (r.value - p.value.value)|num if p.value else '—' }}</td><td>{{ r.user.username if r.user else '—' }}</td></tr>{% else %}<tr><td colspan="8" class="table-empty">Valitud filtritega näite ei leitud.</td></tr>{% endfor %}</tbody></table></div><p class="muted small-note">Tarbitud kogus arvutatakse võrreldes eelmise salvestatud kuu näiduga.</p>{% endblock %}
+```html
+{% extends 'base.html' %}
+{% block title %}Ajalugu · Forus Arvestid{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">ARUANDED</p>
+        <h1>Näitude ajalugu</h1>
+        <p class="muted">Vaata valitud kuu salvestatud näite ja ekspordi need Excelisse.</p>
+    </div>
+</div>
+
+<form class="filter-bar">
+    <label>
+        Arvestuskuu
+        <input type="month" name="period" value="{{ period }}">
+    </label>
+
+    <label>
+        Kaubanduskeskus
+        <select name="center_id">
+            <option value="">Kõik objektid</option>
+            {% for c in centers %}
+            <option value="{{ c.id }}" {% if center_id == c.id %}selected{% endif %}>
+                {{ c.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </label>
+
+    <button class="button button-secondary" type="submit">Filtreeri</button>
+
+    <a class="button button-primary"
+       href="{{ url_for('export_xlsx', period=period, center_id=center_id) }}">
+        ↓ Ekspordi Excel
+    </a>
+</form>
+
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Objekt</th>
+                <th>Kategooria</th>
+                <th>Mõõdik</th>
+                <th>Ressurss</th>
+                <th>Eelmine</th>
+                <th>Praegune</th>
+                <th>Tarbitud</th>
+                <th>Sisestaja</th>
+                {% if current_user.is_authenticated and current_user.is_admin %}
+                <th>Tegevused</th>
+                {% endif %}
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for r in readings %}
+            {% set p = namespace(value=none) %}
+
+            {% for pr in r.meter.readings %}
+                {% if pr.period < r.period and
+                      (p.value is none or pr.period > p.value.period) %}
+                    {% set p.value = pr %}
+                {% endif %}
+            {% endfor %}
+
+            <tr>
+                <td>{{ r.meter.category.center.name }}</td>
+                <td>{{ r.meter.category.name }}</td>
+                <td>{{ r.meter.name }}</td>
+                <td>{{ r.meter.resource_type }}</td>
+                <td>{{ p.value.value|num if p.value else '—' }}</td>
+                <td>
+                    <strong>{{ r.value|num }}</strong>
+                    {{ r.meter.unit }}
+                </td>
+                <td>
+                    {{ (r.value - p.value.value)|num if p.value else '—' }}
+                </td>
+                <td>{{ r.user.username if r.user else '—' }}</td>
+
+                {% if current_user.is_authenticated and current_user.is_admin %}
+                <td>
+                    <details>
+                        <summary class="button button-secondary">Muuda</summary>
+
+                        <form method="POST"
+                              action="{{ url_for('edit_reading', reading_id=r.id) }}"
+                              style="margin-top: 12px; min-width: 180px;">
+
+                            <label>
+                                Kuupäev
+                                <input type="month"
+                                       name="period"
+                                       value="{{ r.period }}"
+                                       required>
+                            </label>
+
+                            <label>
+                                Näit ({{ r.meter.unit }})
+                                <input type="number"
+                                       name="value"
+                                       step="any"
+                                       min="0"
+                                       value="{{ r.value }}"
+                                       required>
+                            </label>
+
+                            <button class="button button-primary" type="submit">
+                                Salvesta
+                            </button>
+                        </form>
+                    </details>
+                </td>
+                {% endif %}
+            </tr>
+
+            {% else %}
+            <tr>
+                <td colspan="9" class="table-empty">
+                    Valitud filtritega näite ei leitud.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<p class="muted small-note">
+    Tarbitud kogus arvutatakse võrreldes eelmise salvestatud kuu näiduga.
+</p>
+{% endblock %}
+```
