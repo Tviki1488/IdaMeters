@@ -11,7 +11,7 @@
     </div>
 </div>
 
-<form class="filter-bar">
+<form class="filter-bar" method="GET">
     <label>
         Arvestuskuu
         <input type="month" name="period" value="{{ period }}">
@@ -22,14 +22,17 @@
         <select name="center_id">
             <option value="">Kõik objektid</option>
             {% for c in centers %}
-            <option value="{{ c.id }}" {% if center_id == c.id %}selected{% endif %}>
+            <option value="{{ c.id }}"
+                {% if center_id == c.id %}selected{% endif %}>
                 {{ c.name }}
             </option>
             {% endfor %}
         </select>
     </label>
 
-    <button class="button button-secondary" type="submit">Filtreeri</button>
+    <button class="button button-secondary" type="submit">
+        Filtreeri
+    </button>
 
     <a class="button button-primary"
        href="{{ url_for('export_xlsx', period=period, center_id=center_id) }}">
@@ -49,7 +52,7 @@
                 <th>Praegune</th>
                 <th>Tarbitud</th>
                 <th>Sisestaja</th>
-                {% if current_user.is_authenticated and current_user.is_admin %}
+                {% if logged_in_user and logged_in_user.role == 'admin' %}
                 <th>Tegevused</th>
                 {% endif %}
             </tr>
@@ -61,7 +64,7 @@
 
             {% for pr in r.meter.readings %}
                 {% if pr.period < r.period and
-                      (p.value is none or pr.period > p.value.period) %}
+                    (p.value is none or pr.period > p.value.period) %}
                     {% set p.value = pr %}
                 {% endif %}
             {% endfor %}
@@ -71,32 +74,34 @@
                 <td>{{ r.meter.category.name }}</td>
                 <td>{{ r.meter.name }}</td>
                 <td>{{ r.meter.resource_type }}</td>
+
                 <td>{{ p.value.value|num if p.value else '—' }}</td>
+
                 <td>
                     <strong>{{ r.value|num }}</strong>
                     {{ r.meter.unit }}
                 </td>
+
                 <td>
                     {{ (r.value - p.value.value)|num if p.value else '—' }}
                 </td>
+
                 <td>{{ r.user.username if r.user else '—' }}</td>
 
-                {% if current_user.is_authenticated and current_user.is_admin %}
+                {% if logged_in_user and logged_in_user.role == 'admin' %}
                 <td>
                     <details>
-                        <summary class="button button-secondary">Muuda</summary>
+                        <summary class="button button-secondary">
+                            Muuda
+                        </summary>
 
                         <form method="POST"
                               action="{{ url_for('edit_reading', reading_id=r.id) }}"
                               style="margin-top: 12px; min-width: 180px;">
 
-                            <label>
-                                Kuupäev
-                                <input type="month"
-                                       name="period"
-                                       value="{{ r.period }}"
-                                       required>
-                            </label>
+                            <input type="hidden"
+                                   name="csrf_token"
+                                   value="{{ csrf_token() }}">
 
                             <label>
                                 Näit ({{ r.meter.unit }})
@@ -108,7 +113,16 @@
                                        required>
                             </label>
 
-                            <button class="button button-primary" type="submit">
+                            <label>
+                                Märkus
+                                <input type="text"
+                                       name="note"
+                                       maxlength="500"
+                                       value="{{ r.note or '' }}">
+                            </label>
+
+                            <button class="button button-primary"
+                                    type="submit">
                                 Salvesta
                             </button>
                         </form>
