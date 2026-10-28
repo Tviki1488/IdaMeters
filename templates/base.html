@@ -1,3 +1,9 @@
 <!doctype html><html lang="et"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#153d59"><title>{% block title %}MeterVault{% endblock %}</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head><body>
-{% if logged_in_user %}<header class="topbar"><a class="brand" href="{{ url_for('index') }}"><span class="brandmark">M</span><span>MeterVault</span></a><nav><a href="{{ url_for('index') }}">Objektid</a><a href="{{ url_for('history') }}">Ajalugu</a>{% if logged_in_user.role == 'admin' %}<a href="{{ url_for('admin_home') }}">Haldus</a>{% endif %}</nav><div class="userarea"><span class="userlabel">{{ logged_in_user.username }}</span><form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button-quiet button-small" type="submit">Logi välja</button></form></div></header>{% endif %}
+{% if logged_in_user %}<header class="topbar"><a class="brand" href="{{ url_for('index') }}">
+  <img
+    class="brand-logo"
+    src="{{ url_for('static', filename='forus-arvestid.png') }}"
+    alt="FORUS arvestid"
+  >
+</a><nav><a href="{{ url_for('index') }}">Objektid</a><a href="{{ url_for('history') }}">Ajalugu</a>{% if logged_in_user.role == 'admin' %}<a href="{{ url_for('admin_home') }}">Haldus</a>{% endif %}</nav><div class="userarea"><span class="userlabel">{{ logged_in_user.username }}</span><form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button-quiet button-small" type="submit">Logi välja</button></form></div></header>{% endif %}
 <main class="page {% if not logged_in_user %}page-auth{% endif %}">{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<div class="flashes">{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}{% endwith %}{% block content %}{% endblock %}</main><footer class="footer">MeterVault · Mõõdikute näitude haldus</footer></body></html>
