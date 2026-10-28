@@ -46,35 +46,44 @@
 }
 
 /* History: keep the edit form floating above the table */
+
+/* History: floating edit panel */
 .table-wrap td details {
-    position: relative;
+    position: static;
 }
 
 .table-wrap td details > form {
-    position: absolute;
-    top: 0;
-    left: 100%;
-    z-index: 100;
-    width: 320px;
-    min-width: 320px !important;
-    margin-top: 0 !important;
-    padding: 16px;
-    background: #ffffff;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+
+    width: min(360px, calc(100vw - 32px));
+    min-width: 0 !important;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    box-sizing: border-box;
+
+    margin: 0 !important;
+    padding: 22px;
+    background: #fff;
     border: 1px solid #d8e2eb;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(20, 45, 65, 0.16);
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(20, 45, 65, 0.22);
 }
 
-/* Keep edit controls neatly arranged */
 .table-wrap td details > form label {
     display: block;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 .table-wrap td details > form input {
-    box-sizing: border-box;
+    display: block;
     width: 100%;
     min-width: 0;
+    box-sizing: border-box;
+    margin-top: 6px;
 }
 
 .table-wrap td details > form button {
