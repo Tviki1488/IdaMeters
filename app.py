@@ -1,113 +1,96 @@
-@admin_required
-def admin_edit_center(center_id):
-    c = db.get_or_404(Center, center_id); name = request.form.get('name','').strip()
-    if name: c.name = name
-    c.sort_order = request.form.get('sort_order', c.sort_order, type=int)
-    log_action('center_updated', c.name); db.session.commit(); flash('Muudatused salvestatud.', 'success')
-    return redirect(url_for('admin_home'))
+import os, io, csv
+from datetime import datetime, date
+from functools import wraps
+from urllib.parse import urlparse
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file, abort
+from flask_wtf.csrf import CSRFProtect
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.utils import get_column_letter
 
-@app.route('/admin/center/<int:center_id>/archive', methods=['POST'])
-@admin_required
-def admin_archive_center(center_id):
-    c = db.get_or_404(Center, center_id); c.active = not c.active
-    log_action('center_active_changed', f'{c.name}: active={c.active}'); db.session.commit()
-    flash('Keskuse olek muudetud.', 'success'); return redirect(url_for('admin_home'))
+app = Flask(__name__)
+CSRFProtect(app)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'CHANGE-ME-before-deployment')
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///metervault.db')
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('COOKIE_SECURE', '0') == '1'
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+db = SQLAlchemy(app)
 
-@app.route('/admin/category', methods=['POST'])
-@admin_required
-def admin_add_category():
-    name = request.form.get('name','').strip(); center_id = request.form.get('center_id', type=int)
-    center = db.session.get(Center, center_id) if center_id else None
-    if not name or not center: flash('Vali kaubanduskeskus ja sisesta kategooria nimi.', 'error')
-    else:
-        db.session.add(Category(center_id=center.id, name=name, sort_order=request.form.get('sort_order', 0, type=int)))
-        log_action('category_created', f'{center.name} / {name}'); db.session.commit(); flash('Kategooria lisatud.', 'success')
-    return redirect(url_for('admin_home'))
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='user')
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
-@app.route('/admin/category/<int:category_id>/edit', methods=['POST'])
-@admin_required
-def admin_edit_category(category_id):
-    c = db.get_or_404(Category, category_id); name = request.form.get('name','').strip()
-    if name: c.name = name
-    c.sort_order = request.form.get('sort_order', c.sort_order, type=int)
-    log_action('category_updated', c.name); db.session.commit(); flash('Kategooria uuendatud.', 'success'); return redirect(url_for('admin_home'))
+    def set_password(self, password): self.password_hash = generate_password_hash(password)
+    def check_password(self, password): return check_password_hash(self.password_hash, password)
 
-@app.route('/admin/category/<int:category_id>/archive', methods=['POST'])
-@admin_required
-def admin_archive_category(category_id):
-    c = db.get_or_404(Category, category_id); c.active = not c.active
-    log_action('category_active_changed', f'{c.name}: active={c.active}'); db.session.commit(); flash('Kategooria olek muudetud.', 'success'); return redirect(url_for('admin_home'))
+class Center(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(160), nullable=False)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+    categories = db.relationship('Category', backref='center', cascade='all, delete-orphan', order_by='Category.sort_order')
 
-@app.route('/admin/meter', methods=['POST'])
-@admin_required
-def admin_add_meter():
-    category_id = request.form.get('category_id', type=int); category = db.session.get(Category, category_id) if category_id else None
-    name = request.form.get('name','').strip(); resource = request.form.get('resource_type','Muu'); unit = request.form.get('unit','').strip()
-    allowed = {'Elekter','Külm vesi','Soe vesi','Gaas','Muu'}
-    if not category or not name or resource not in allowed or not unit:
-        flash('Kontrolli kategooriat, mõõdiku nime, ressurssi ja ühikut.', 'error')
-    else:
-        m = Meter(category_id=category.id, name=name, meter_code=request.form.get('meter_code','').strip() or None, resource_type=resource, unit=unit, sort_order=request.form.get('sort_order', 0, type=int))
-        db.session.add(m); log_action('meter_created', f'{category.center.name} / {category.name} / {name}'); db.session.commit(); flash('Mõõdik lisatud.', 'success')
-    return redirect(url_for('admin_home'))
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    center_id = db.Column(db.Integer, db.ForeignKey('center.id'), nullable=False)
+    name = db.Column(db.String(160), nullable=False)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+    meters = db.relationship('Meter', backref='category', cascade='all, delete-orphan', order_by='Meter.sort_order')
 
-@app.route('/admin/meter/<int:meter_id>/edit', methods=['POST'])
-@admin_required
-def admin_edit_meter(meter_id):
-    m = db.get_or_404(Meter, meter_id); name = request.form.get('name','').strip(); unit = request.form.get('unit','').strip()
-    resource = request.form.get('resource_type','Muu')
-    if name and unit and resource in {'Elekter','Külm vesi','Soe vesi','Gaas','Muu'}:
-        m.name=name; m.unit=unit; m.resource_type=resource; m.meter_code=request.form.get('meter_code','').strip() or None; m.sort_order=request.form.get('sort_order', m.sort_order, type=int)
-        log_action('meter_updated', m.name); db.session.commit(); flash('Mõõdik uuendatud.', 'success')
-    else: flash('Kontrolli mõõdiku andmeid.', 'error')
-    return redirect(url_for('admin_home'))
+class Meter(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
+    name = db.Column(db.String(160), nullable=False)
+    meter_code = db.Column(db.String(100), nullable=True)
+    resource_type = db.Column(db.String(40), nullable=False) # Elekter, Külm vesi, Soe vesi, Gaas, Muu
+    unit = db.Column(db.String(20), nullable=False, default='m³')
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+    readings = db.relationship('Reading', backref='meter', cascade='all, delete-orphan')
 
-@app.route('/admin/meter/<int:meter_id>/archive', methods=['POST'])
-@admin_required
-def admin_archive_meter(meter_id):
-    m = db.get_or_404(Meter, meter_id); m.active = not m.active
-    log_action('meter_active_changed', f'{m.name}: active={m.active}'); db.session.commit(); flash('Mõõdiku olek muudetud.', 'success'); return redirect(url_for('admin_home'))
+class Reading(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    meter_id = db.Column(db.Integer, db.ForeignKey('meter.id'), nullable=False)
+    period = db.Column(db.String(7), nullable=False) # YYYY-MM
+    value = db.Column(db.Float, nullable=False)
+    note = db.Column(db.String(500), nullable=True)
+    entered_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    entered_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    __table_args__ = (db.UniqueConstraint('meter_id', 'period', name='uq_meter_period'),)
+    user = db.relationship('User')
 
-@app.route('/admin/user', methods=['POST'])
-@admin_required
-def admin_add_user():
-    username=request.form.get('username','').strip(); password=request.form.get('password',''); role=request.form.get('role','user')
-    if not username or len(password) < 10 or role not in {'user','admin'}:
-        flash('Kasutajanimi on kohustuslik ja parool peab olema vähemalt 10 märki.', 'error')
-    elif User.query.filter_by(username=username).first(): flash('See kasutajanimi on juba kasutusel.', 'error')
-    else:
-        u=User(username=username, role=role); u.set_password(password); db.session.add(u); log_action('user_created', f'{username} ({role})'); db.session.commit(); flash('Kasutaja lisatud.', 'success')
-    return redirect(url_for('admin_home'))
+class AuditLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    action = db.Column(db.String(100), nullable=False)
+    details = db.Column(db.String(500), nullable=False, default='')
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    user = db.relationship('User')
 
-@app.route('/admin/user/<int:user_id>/toggle', methods=['POST'])
-@admin_required
-def admin_toggle_user(user_id):
-    u=db.get_or_404(User,user_id)
-    if u.id == current_user().id: flash('Enda kontot ei saa siin deaktiveerida.', 'error')
-    else:
-        u.active=not u.active; log_action('user_active_changed', f'{u.username}: active={u.active}'); db.session.commit(); flash('Kasutaja olek muudetud.', 'success')
-    return redirect(url_for('admin_home'))
+def current_user():
+    uid = session.get('user_id')
+    return db.session.get(User, uid) if uid else None
 
-@app.route('/admin/user/<int:user_id>/password', methods=['POST'])
-@admin_required
-def admin_reset_password(user_id):
-    u=db.get_or_404(User,user_id); password=request.form.get('password','')
-    if len(password) < 10: flash('Parool peab olema vähemalt 10 märki.', 'error')
-    else: u.set_password(password); log_action('password_reset', u.username); db.session.commit(); flash('Parool muudetud.', 'success')
-    return redirect(url_for('admin_home'))
-
-@app.errorhandler(403)
-def forbidden(_): return render_template('error.html', code=403, message='Sul puudub sellele lehele ligipääs.'), 403
-@app.errorhandler(404)
-def not_found(_): return render_template('error.html', code=404, message='Lehte ei leitud.'), 404
-
-with app.app_context():
-    db.create_all()
-    # Optional first-run admin bootstrap. Never hardcode production credentials.
-    bootstrap_user = os.environ.get('BOOTSTRAP_ADMIN_USER')
-    bootstrap_password = os.environ.get('BOOTSTRAP_ADMIN_PASSWORD')
-    if bootstrap_user and bootstrap_password and not User.query.filter_by(role='admin').first():
-        admin = User(username=bootstrap_user, role='admin'); admin.set_password(bootstrap_password); db.session.add(admin); db.session.commit()
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
+def login_required(fn):
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        user = current_user()
+        if not user or not user.active:
+            session.clear()
+            return redirect(url_for('login'))
+        return fn(*args, **kwargs)
