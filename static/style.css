@@ -102,11 +102,36 @@
     margin-bottom: 24px;
 }
 
+
+/* Login page — consistent alignment */
+.login-card {
+    padding: 34px;
+}
+
+.login-brand {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin: 0 0 22px;
+}
+
 .login-brand-logo {
     display: block;
-    width: 145px;
-    max-width: 100%;
-    height: auto;
-    max-height: 65px;
+    width: 120px;
+    height: 52px;
     object-fit: contain;
+    object-position: left center;
+}
+
+.login-card .eyebrow {
+    margin-bottom: 7px;
+}
+
+.login-card h1 {
+    margin-top: 4px;
+    margin-bottom: 9px;
+}
+
+.login-card > .muted {
+    margin-bottom: 24px;
 }
