@@ -233,6 +233,51 @@ def history():
     return render_template('history.html', readings=readings, centers=centers, period=period, center_id=center_id)
 
 @app.route('/export.xlsx')
+
+@app.route('/history/<int:reading_id>/edit', methods=['POST'])
+@admin_required
+def edit_reading(reading_id):
+    reading = db.get_or_404(Reading, reading_id)
+
+    raw_value = request.form.get('value', '').strip().replace(',', '.')
+    note = request.form.get('note', '').strip()
+
+    try:
+        new_value = float(raw_value)
+        if new_value < 0 or not __import__('math').isfinite(new_value):
+            raise ValueError()
+    except ValueError:
+        flash('Sisesta korrektne nullist suurem või võrdne näit.', 'error')
+        return redirect(url_for(
+            'history',
+            period=reading.period,
+            center_id=reading.meter.category.center_id
+        ))
+
+    old_value = reading.value
+    old_note = reading.note or ''
+
+    reading.value = new_value
+    reading.note = note or None
+    reading.updated_at = datetime.utcnow()
+
+    log_action(
+        'reading_edited',
+        f'{reading.meter.category.center.name} / '
+        f'{reading.meter.category.name} / {reading.meter.name}; '
+        f'period={reading.period}; '
+        f'value={old_value} -> {new_value}; '
+        f'note_changed={old_note != (note or "")}'
+    )
+
+    db.session.commit()
+
+    flash('Näidu muudatus salvestatud.', 'success')
+    return redirect(url_for(
+        'history',
+        period=reading.period,
+        center_id=reading.meter.category.center_id
+    ))
 @login_required
 def export_xlsx():
     period = request.args.get('period', date.today().strftime('%Y-%m'))
