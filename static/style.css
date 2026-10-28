@@ -93,3 +93,20 @@
 .table-wrap td details > summary {
     cursor: pointer;
 }
+
+/* Forus logo on the login page */
+.login-brand {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-bottom: 24px;
+}
+
+.login-brand-logo {
+    display: block;
+    width: 145px;
+    max-width: 100%;
+    height: auto;
+    max-height: 65px;
+    object-fit: contain;
+}
