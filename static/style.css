@@ -135,3 +135,119 @@
 .login-card > .muted {
     margin-bottom: 24px;
 }
+
+/* =========================================
+   FORUS ARVESTID — TWO TARIFF METERS
+   ========================================= */
+
+.tariff-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 11px;
+    border-radius: 20px;
+    background: #e9eefc;
+    color: #4057a5;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.table-badge {
+    margin-left: 5px;
+}
+
+.dual-tariff-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin: 18px 0;
+}
+
+.tariff-panel {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid #e3e7ee;
+    border-radius: 14px;
+    background: #fafbfc;
+}
+
+.tariff-day {
+    border-top: 3px solid #e8ad42;
+    background: #fffaf0;
+}
+
+.tariff-night {
+    border-top: 3px solid #6579ad;
+    background: #f4f6fc;
+}
+
+.tariff-heading {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 16px;
+    font-size: 16px;
+}
+
+.tariff-day .tariff-heading span {
+    color: #d99a25;
+    font-size: 23px;
+}
+
+.tariff-night .tariff-heading span {
+    color: #526a9f;
+    font-size: 23px;
+}
+
+.tariff-panel .previous-value {
+    margin-bottom: 16px;
+}
+
+.tariff-panel .current-value {
+    display: block;
+    width: 100%;
+}
+
+.tariff-panel .current-value > span,
+.tariff-panel .previous-value > span {
+    display: block;
+    margin-bottom: 7px;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.tariff-panel .previous-value strong {
+    font-size: 21px;
+    font-weight: 700;
+}
+
+.tariff-panel .number-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.tariff-panel .number-input-wrap input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+}
+
+.tariff-panel .number-input-wrap > span {
+    flex-shrink: 0;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+@media (max-width: 600px) {
+    .dual-tariff-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .tariff-panel {
+        padding: 14px;
+    }
+}
