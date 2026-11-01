@@ -76,7 +76,7 @@
                             <summary>
                                 <span class="status-dot {% if not cat.active %}inactive{% endif %}"></span>
                                 <span class="admin-item-name">{{ cat.name }}</span>
-                                <span class="muted">{{ cat.meters|length }} mõõdikut</span>
+                                <span class="muted">{{ cat.meters|selectattr('deleted_at', 'none')|list|length }} mõõdikut</span>
                                 <span class="chevron">⌄</span>
                             </summary>
 
@@ -102,17 +102,15 @@
 
                                 <div class="meter-admin-list" data-category-id="{{ cat.id }}">
 
-                                    {% for m in cat.meters %}
+                                    {% for m in cat.meters if m.deleted_at is none %}
 
                                     <details class="meter-admin" data-meter-id="{{ m.id }}" data-restore-id="meter-{{ m.id }}">
 
                                         <summary>
-                                            {% if m.deleted_at is none %}<span class="meter-drag-handle" draggable="true" title="Lohista mõõdiku järjestamiseks" aria-label="Lohista mõõdiku järjestamiseks">⠿</span>{% endif %}
-                                            <span class="status-dot {% if m.deleted_at is not none %}inactive{% elif not m.active %}inactive{% endif %}"></span>
+                                            <span class="meter-drag-handle" draggable="true" title="Lohista mõõdiku järjestamiseks" aria-label="Lohista mõõdiku järjestamiseks">⠿</span>
+                                            <span class="status-dot {% if not m.active %}inactive{% endif %}"></span>
                                             <span>{{ m.name }}</span>
-                                            <small class="meter-state-label">
-                                                {% if m.deleted_at is not none %}Kustutatud{% elif m.active %}Aktiivne{% else %}Mitteaktiivne{% endif %}
-                                            </small>
+                                            <small class="meter-state-label">{% if m.active %}Aktiivne{% else %}Mitteaktiivne{% endif %}</small>
                                             <small>
                                                 {{ m.resource_type }} · {{ m.unit }}
                                                 {% if m.tariff_mode|default('single') == 'dual' %}
@@ -123,7 +121,6 @@
 
                                         <div class="nested-body">
 
-                                            {% if m.deleted_at is none %}
                                             <form method="post"
                                                   action="{{ url_for('admin_edit_meter', meter_id=m.id) }}"
                                                   class="stack-form compact-form">
@@ -187,11 +184,7 @@
                                                 </button>
 
                                             </form>
-                                            {% else %}
-                                            <p class="muted">See mõõdik on kustutatud. Andmeid ei saa enam muuta; ajaloolised näidud on säilitatud.</p>
-                                            {% endif %}
 
-                                            {% if m.deleted_at is none %}
                                             <div class="meter-admin-actions">
 
     <form method="post"
@@ -232,7 +225,6 @@
     </form>
 
 </div>
-                                            {% endif %}
 
                                         </div>
 
