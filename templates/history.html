@@ -37,23 +37,17 @@
     </a>
 </form>
 
-<div class="table-wrap">
-    <table>
+<div class="history-table-wrap">
+    <table class="history-table">
         <thead>
             <tr>
-                <th>Objekt</th>
-                <th>Kategooria</th>
+                <th>Objekt / kategooria</th>
                 <th>Mõõdik</th>
                 <th>Ressurss</th>
-                <th>Eelmine / kokku</th>
-                <th>Praegune / kokku</th>
-                <th>Kokku tarbitud</th>
-                <th>Päev: eelmine</th>
-                <th>Päev: praegune</th>
-                <th>Päev: tarbitud</th>
-                <th>Öö: eelmine</th>
-                <th>Öö: praegune</th>
-                <th>Öö: tarbitud</th>
+                <th>Eelmine</th>
+                <th>Praegune</th>
+                <th>Tarbitud</th>
+                <th>Tariifid</th>
                 <th>Sisestaja</th>
                 {% if logged_in_user and logged_in_user.role == 'admin' %}
                 <th>Tegevused</th>
@@ -73,54 +67,82 @@
             {% endfor %}
 
             <tr>
-                <td>{{ r.meter.category.center.name }}</td>
-                <td>{{ r.meter.category.name }}</td>
-                <td>
-                    {{ r.meter.name }}
+                <td data-label="Objekt / kategooria">
+                    <strong>{{ r.meter.category.center.name }}</strong>
+                    <span class="history-subtext">{{ r.meter.category.name }}</span>
+                </td>
+
+                <td data-label="Mõõdik">
+                    <strong>{{ r.meter.name }}</strong>
                     {% if r.meter.tariff_mode == 'dual' %}
                     <span class="tariff-badge table-badge">2 tariifi</span>
                     {% endif %}
                 </td>
-                <td>{{ r.meter.resource_type }}</td>
 
-                {% if r.meter.tariff_mode == 'dual' %}
-                <td>{{ p.value.value|num if p.value else '—' }}</td>
-                <td><strong>{{ r.value|num }}</strong> {{ r.meter.unit }}</td>
-                <td>{{ (r.value - p.value.value)|num if p.value else '—' }}</td>
+                <td data-label="Ressurss">{{ r.meter.resource_type }}</td>
 
-                <td>{{ p.value.day_value|num if p.value and p.value.day_value is not none else '—' }}</td>
-                <td>{{ r.day_value|num if r.day_value is not none else '—' }}</td>
-                <td>
-                    {{ (r.day_value - p.value.day_value)|num
-                       if p.value and p.value.day_value is not none and r.day_value is not none
-                       else '—' }}
+                <td data-label="Eelmine">
+                    {{ p.value.value|num if p.value else '—' }}
                 </td>
 
-                <td>{{ p.value.night_value|num if p.value and p.value.night_value is not none else '—' }}</td>
-                <td>{{ r.night_value|num if r.night_value is not none else '—' }}</td>
-                <td>
-                    {{ (r.night_value - p.value.night_value)|num
-                       if p.value and p.value.night_value is not none and r.night_value is not none
-                       else '—' }}
+                <td data-label="Praegune">
+                    <strong>{{ r.value|num }}</strong>
+                    {{ r.meter.unit }}
                 </td>
 
-                {% else %}
-                <td>{{ p.value.value|num if p.value else '—' }}</td>
-                <td><strong>{{ r.value|num }}</strong> {{ r.meter.unit }}</td>
-                <td>{{ (r.value - p.value.value)|num if p.value else '—' }}</td>
-                <td colspan="6">—</td>
-                {% endif %}
+                <td data-label="Tarbitud">
+                    <strong>
+                        {{ (r.value - p.value.value)|num if p.value else '—' }}
+                    </strong>
+                    {% if p.value %}{{ r.meter.unit }}{% endif %}
+                </td>
 
-                <td>{{ r.user.username if r.user else '—' }}</td>
+                <td data-label="Tariifid">
+                    {% if r.meter.tariff_mode == 'dual' %}
+                    <details class="history-tariff-details">
+                        <summary>Vaata tariife</summary>
+
+                        <div class="history-detail-grid">
+                            <div class="history-detail-panel history-day">
+                                <strong>Päev</strong>
+                                <span>Eelmine: {{ p.value.day_value|num if p.value and p.value.day_value is not none else '—' }}</span>
+                                <span>Praegune: {{ r.day_value|num if r.day_value is not none else '—' }}</span>
+                                <span>Tarbitud:
+                                    {% if p.value and p.value.day_value is not none and r.day_value is not none %}
+                                        {{ (r.day_value - p.value.day_value)|num }}
+                                    {% else %}—{% endif %}
+                                </span>
+                            </div>
+
+                            <div class="history-detail-panel history-night">
+                                <strong>Öö</strong>
+                                <span>Eelmine: {{ p.value.night_value|num if p.value and p.value.night_value is not none else '—' }}</span>
+                                <span>Praegune: {{ r.night_value|num if r.night_value is not none else '—' }}</span>
+                                <span>Tarbitud:
+                                    {% if p.value and p.value.night_value is not none and r.night_value is not none %}
+                                        {{ (r.night_value - p.value.night_value)|num }}
+                                    {% else %}—{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </details>
+                    {% else %}
+                    <span class="muted">—</span>
+                    {% endif %}
+                </td>
+
+                <td data-label="Sisestaja">
+                    {{ r.user.username if r.user else '—' }}
+                </td>
 
                 {% if logged_in_user and logged_in_user.role == 'admin' %}
-                <td>
-                    <details>
+                <td data-label="Tegevused">
+                    <details class="history-edit-details">
                         <summary class="button button-secondary">Muuda</summary>
 
                         <form method="POST"
                               action="{{ url_for('edit_reading', reading_id=r.id) }}"
-                              style="margin-top:12px; min-width:190px;">
+                              class="history-edit-form">
 
                             <input type="hidden"
                                    name="csrf_token"
@@ -177,7 +199,7 @@
 
             {% else %}
             <tr>
-                <td colspan="{{ 15 if logged_in_user and logged_in_user.role == 'admin' else 14 }}">
+                <td colspan="{{ 9 if logged_in_user and logged_in_user.role == 'admin' else 8 }}">
                     Valitud filtritega näite ei leitud.
                 </td>
             </tr>
