@@ -179,7 +179,7 @@ def center_view(center_id):
     rows = []
     total = completed = 0
     for cat in categories:
-        meters = [m for m in cat.meters if m.active]
+        meters = [m for m in cat.meters if m.active and m.deleted_at is None]
         for meter in meters:
             total += 1
             reading = Reading.query.filter_by(meter_id=meter.id, period=period).first()
@@ -197,7 +197,7 @@ def category_readings(category_id):
     if not valid_period(period):
         period = date.today().strftime('%Y-%m')
 
-    meters = [m for m in category.meters if m.active]
+    meters = [m for m in category.meters if m.active and m.deleted_at is None]
 
     if request.method == 'POST':
         saved = 0
@@ -740,20 +740,26 @@ def admin_archive_meter(meter_id):
 def admin_delete_meter(meter_id):
     m = db.get_or_404(Meter, meter_id)
 
+    if m.deleted_at is not None:
+        flash('Mõõdik on juba kustutatud.', 'info')
+        return redirect(url_for('admin_home'))
+
     meter_name = m.name
     category_name = m.category.name
     center_name = m.category.center.name
 
+    m.deleted_at = datetime.utcnow()
+    m.active = False
+
     log_action(
         'meter_deleted',
-        f'{center_name} / {category_name} / {meter_name}'
+        f'{center_name} / {category_name} / {meter_name}; historical readings preserved'
     )
 
-    db.session.delete(m)
     db.session.commit()
 
     flash(
-        'Mõõdik ja kõik sellega seotud näidud kustutati jäädavalt.',
+        'Mõõdik eemaldati aktiivsest arvestusest. Kõik ajaloolised näidud säilitati.',
         'success'
     )
 
