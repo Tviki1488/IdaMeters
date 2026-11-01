@@ -142,7 +142,11 @@ def index():
     centers = Center.query.filter_by(active=True).order_by(Center.sort_order, Center.name).all()
     stats = {}
     for c in centers:
-        meters = [m for cat in c.categories if cat.active for m in cat.meters if m.active]
+        meters = [
+    m for cat in c.categories if cat.active
+    for m in cat.meters
+    if m.active and m.deleted_at is None
+]
         done = Reading.query.filter(Reading.period == period, Reading.meter_id.in_([m.id for m in meters])).count() if meters else 0
         stats[c.id] = (done, len(meters))
     return render_template('index.html', centers=centers, stats=stats, period=period)
