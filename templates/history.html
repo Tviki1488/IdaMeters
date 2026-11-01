@@ -177,7 +177,7 @@
 
             {% else %}
             <tr>
-                <td colspan="15" class="table-empty">
+                <td colspan="{{ 15 if logged_in_user and logged_in_user.role == 'admin' else 14 }}">
                     Valitud filtritega näite ei leitud.
                 </td>
             </tr>
