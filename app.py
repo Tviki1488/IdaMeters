@@ -669,11 +669,12 @@ def admin_reorder_meters(category_id):
     ):
         return jsonify({'success': False, 'message': 'Vigane mõõdikute järjestus.'}), 400
 
-    current_ids = [meter.id for meter in category.meters]
+    visible_meters = [meter for meter in category.meters if meter.deleted_at is None]
+    current_ids = [meter.id for meter in visible_meters]
     if len(meter_ids) != len(set(meter_ids)) or set(meter_ids) != set(current_ids):
         return jsonify({'success': False, 'message': 'Mõõdikute nimekiri ei vasta kategooriale.'}), 400
 
-    meters_by_id = {meter.id: meter for meter in category.meters}
+    meters_by_id = {meter.id: meter for meter in visible_meters}
     for position, meter_id in enumerate(meter_ids):
         meters_by_id[meter_id].sort_order = position * 10
 
