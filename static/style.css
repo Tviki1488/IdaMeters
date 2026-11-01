@@ -292,3 +292,237 @@
     color: var(--muted);
     font-weight: 400;
 }
+
+/* History — compact table and responsive layout */
+
+.history-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fff;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.history-table th {
+    padding: 14px 12px;
+    text-align: left;
+    white-space: nowrap;
+    color: var(--muted);
+    background: #f7f9fa;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--line);
+}
+
+.history-table td {
+    padding: 15px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+}
+
+.history-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.history-table tbody tr:hover {
+    background: #fafcfd;
+}
+
+.history-subtext {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.history-tariff-details summary {
+    cursor: pointer;
+    color: var(--navy);
+    font-weight: 700;
+    white-space: nowrap;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: #edf3f8;
+    list-style: none;
+    display: inline-block;
+}
+
+.history-tariff-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.history-tariff-details summary::after {
+    content: " +";
+}
+
+.history-tariff-details[open] summary::after {
+    content: " −";
+}
+
+.history-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    min-width: 280px;
+    margin-top: 10px;
+}
+
+.history-detail-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #f5f7f9;
+    font-size: 12px;
+}
+
+.history-detail-panel strong {
+    margin-bottom: 3px;
+    font-size: 13px;
+}
+
+.history-day {
+    border-top: 3px solid #e9a52d;
+}
+
+.history-night {
+    border-top: 3px solid #687fbd;
+}
+
+.history-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 210px;
+    margin-top: 12px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.history-edit-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Mobile history cards */
+
+@media (max-width: 700px) {
+    .history-table-wrap {
+        overflow: visible;
+        border: none;
+        background: transparent;
+    }
+
+    .history-table,
+    .history-table tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .history-table thead {
+        display: none;
+    }
+
+    .history-table tbody tr {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        margin-bottom: 14px;
+        padding: 8px 15px;
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        background: #fff;
+        box-shadow: 0 3px 12px rgba(20, 45, 65, 0.04);
+    }
+
+    .history-table tbody tr:hover {
+        background: #fff;
+    }
+
+    .history-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 14px;
+        width: 100%;
+        padding: 10px 0;
+        border-bottom: 1px solid #edf0f2;
+        text-align: right;
+    }
+
+    .history-table td:last-child {
+        border-bottom: none;
+    }
+
+    .history-table td::before {
+        content: attr(data-label);
+        flex: 0 0 38%;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+        text-align: left;
+    }
+
+    .history-table td > strong,
+    .history-table td > span,
+    .history-table td > details {
+        max-width: 62%;
+    }
+
+    .history-table td:first-child {
+        display: block;
+        text-align: left;
+        padding-top: 12px;
+    }
+
+    .history-table td:first-child::before {
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    .history-detail-grid {
+        grid-template-columns: 1fr;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .history-tariff-details[open] {
+        width: 100%;
+        text-align: left;
+    }
+
+    .history-tariff-details[open] .history-detail-grid {
+        text-align: left;
+    }
+
+    .history-edit-form {
+        min-width: 0;
+        width: 100%;
+        text-align: left;
+    }
+
+    .history-edit-details[open] {
+        width: 100%;
+        text-align: left;
+    }
+
+    .history-table td[colspan] {
+        display: block;
+        text-align: left;
+    }
+
+    .history-table td[colspan]::before {
+        display: none;
+    }
+}
