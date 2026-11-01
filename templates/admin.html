@@ -459,13 +459,9 @@
 
 </section>
 
-{% endblock %}
-
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-
     document.querySelectorAll('.add-meter-form, .compact-form').forEach(function (form) {
-
         const resourceSelect = form.querySelector('.resource-select');
         const tariffSetting = form.querySelector('.tariff-setting');
         const tariffCheckbox = form.querySelector('input[name="tariff_mode"]');
@@ -474,7 +470,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         function updateTariffVisibility() {
             const isElectricity = resourceSelect.value === 'Elekter';
-
             tariffSetting.hidden = !isElectricity;
 
             if (!isElectricity) {
@@ -484,8 +479,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         resourceSelect.addEventListener('change', updateTariffVisibility);
         updateTariffVisibility();
-
     });
-
 });
 </script>
+
+{% endblock %}
