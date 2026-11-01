@@ -383,6 +383,7 @@ def history():
 def edit_reading(reading_id):
     reading = db.get_or_404(Reading, reading_id)
     note = request.form.get('note', '').strip()
+    previous = previous_reading(reading.meter_id, reading.period)
 
     try:
         if reading.meter.tariff_mode == 'dual':
@@ -400,10 +401,35 @@ def edit_reading(reading_id):
             ):
                 raise ValueError()
 
+            if previous and previous.day_value is not None:
+                if day_value < previous.day_value:
+                    flash(
+                        'Päevanäit ei tohi olla väiksem eelmisest näidust.',
+                        'error'
+                    )
+                    return redirect(url_for(
+                        'history',
+                        period=reading.period,
+                        center_id=reading.meter.category.center_id
+                    ))
+
+            if previous and previous.night_value is not None:
+                if night_value < previous.night_value:
+                    flash(
+                        'Öönäit ei tohi olla väiksem eelmisest näidust.',
+                        'error'
+                    )
+                    return redirect(url_for(
+                        'history',
+                        period=reading.period,
+                        center_id=reading.meter.category.center_id
+                    ))
+
             old_value = reading.value
             reading.day_value = day_value
             reading.night_value = night_value
             reading.value = day_value + night_value
+
         else:
             raw_value = request.form.get('value', '').strip().replace(',', '.')
             new_value = float(raw_value)
@@ -411,12 +437,23 @@ def edit_reading(reading_id):
             if new_value < 0 or not __import__('math').isfinite(new_value):
                 raise ValueError()
 
+            if previous and new_value < previous.value:
+                flash(
+                    'Uus näit ei tohi olla väiksem eelmisest näidust.',
+                    'error'
+                )
+                return redirect(url_for(
+                    'history',
+                    period=reading.period,
+                    center_id=reading.meter.category.center_id
+                ))
+
             old_value = reading.value
             reading.value = new_value
             reading.day_value = None
             reading.night_value = None
 
-    except ValueError:
+    except (ValueError, TypeError):
         flash('Sisesta korrektsed näidud.', 'error')
         return redirect(url_for(
             'history',
