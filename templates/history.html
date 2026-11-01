@@ -108,6 +108,17 @@
                             </form>
                         </dialog>
                     </details>
+                    <form method="POST"
+                          action="{{ url_for('delete_reading', reading_id=r.id) }}"
+                          onsubmit="return confirm('Kas oled kindel, et soovid selle näidukirje jäädavalt kustutada? Seda toimingut ei saa tagasi võtta.');"
+                          style="display:inline-block; margin-left:6px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="button button-quiet button-small"
+                                title="Kustuta see näit jäädavalt"
+                                aria-label="Kustuta see näit jäädavalt">
+                            Kustuta
+                        </button>
+                    </form>
                 </td>
                 {% endif %}
             </tr>
