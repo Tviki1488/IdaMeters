@@ -61,6 +61,7 @@ class Meter(db.Model):
     unit = db.Column(db.String(20), nullable=False, default='m³')
     tariff_mode = db.Column(db.String(10), nullable=False, default='single')
     active = db.Column(db.Boolean, nullable=False, default=True)
+    deleted_at = db.Column(db.DateTime, nullable=True)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     readings = db.relationship('Reading', backref='meter', cascade='all, delete-orphan')
 
