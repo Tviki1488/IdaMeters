@@ -366,7 +366,7 @@ def category_readings(category_id):
         rows=rows,
         period=period
     )
-
+@app.route('/history')
 @login_required
 def history():
     period = request.args.get('period', date.today().strftime('%Y-%m'))
@@ -382,24 +382,49 @@ def history():
 @admin_required
 def edit_reading(reading_id):
     reading = db.get_or_404(Reading, reading_id)
-    raw_value = request.form.get('value', '').strip().replace(',', '.')
     note = request.form.get('note', '').strip()
 
     try:
-        new_value = float(raw_value)
-        if new_value < 0 or not __import__('math').isfinite(new_value):
-            raise ValueError()
+        if reading.meter.tariff_mode == 'dual':
+            raw_day = request.form.get('day_value', '').strip().replace(',', '.')
+            raw_night = request.form.get('night_value', '').strip().replace(',', '.')
+
+            day_value = float(raw_day)
+            night_value = float(raw_night)
+
+            if (
+                day_value < 0
+                or night_value < 0
+                or not __import__('math').isfinite(day_value)
+                or not __import__('math').isfinite(night_value)
+            ):
+                raise ValueError()
+
+            old_value = reading.value
+            reading.day_value = day_value
+            reading.night_value = night_value
+            reading.value = day_value + night_value
+        else:
+            raw_value = request.form.get('value', '').strip().replace(',', '.')
+            new_value = float(raw_value)
+
+            if new_value < 0 or not __import__('math').isfinite(new_value):
+                raise ValueError()
+
+            old_value = reading.value
+            reading.value = new_value
+            reading.day_value = None
+            reading.night_value = None
+
     except ValueError:
-        flash('Sisesta korrektne nullist suurem või võrdne näit.', 'error')
+        flash('Sisesta korrektsed näidud.', 'error')
         return redirect(url_for(
             'history',
             period=reading.period,
             center_id=reading.meter.category.center_id
         ))
 
-    old_value = reading.value
     old_note = reading.note or ''
-    reading.value = new_value
     reading.note = note or None
     reading.updated_at = datetime.utcnow()
 
@@ -407,7 +432,7 @@ def edit_reading(reading_id):
         'reading_edited',
         f'{reading.meter.category.center.name} / '
         f'{reading.meter.category.name} / {reading.meter.name}; '
-        f'period={reading.period}; value={old_value} -> {new_value}; '
+        f'period={reading.period}; value={old_value} -> {reading.value}; '
         f'note_changed={old_note != (note or "")}'
     )
     db.session.commit()
@@ -429,11 +454,49 @@ def export_xlsx():
     if center_id: query = query.filter(Center.id == center_id)
     readings = query.order_by(Center.sort_order, Center.name, Category.sort_order, Meter.sort_order).all()
     wb = Workbook(); ws = wb.active; ws.title = 'Näidud'
-    ws.append(['Periood','Kaubanduskeskus','Kategooria','Mõõdik','Mõõdiku kood','Ressurss','Ühik','Eelmine näit','Praegune näit','Tarbitud','Märkus','Sisestaja','Sisestatud'])
+    ws.append([
+        'Periood', 'Kaubanduskeskus', 'Kategooria', 'Mõõdik',
+        'Mõõdiku kood', 'Ressurss', 'Ühik',
+        'Eelmine näit', 'Praegune näit', 'Tarbitud',
+        'Päeva eelmine näit', 'Päeva praegune näit', 'Päeva tarbimine',
+        'Öö eelmine näit', 'Öö praegune näit', 'Öö tarbimine',
+        'Märkus', 'Sisestaja', 'Sisestatud'
+    ])
     for r in readings:
         prev = previous_reading(r.meter_id, period)
-        consumption = r.value - prev.value if prev else None
-        ws.append([period, r.meter.category.center.name, r.meter.category.name, r.meter.name, r.meter.meter_code or '', r.meter.resource_type, r.meter.unit, prev.value if prev else None, r.value, consumption, r.note or '', r.user.username if r.user else '', r.entered_at.strftime('%Y-%m-%d %H:%M')])
+        if r.meter.tariff_mode == 'dual':
+            day_consumption = (
+                r.day_value - prev.day_value
+                if prev and prev.day_value is not None and r.day_value is not None
+                else None
+            )
+            night_consumption = (
+                r.night_value - prev.night_value
+                if prev and prev.night_value is not None and r.night_value is not None
+                else None
+            )
+            ws.append([
+                period, r.meter.category.center.name, r.meter.category.name,
+                r.meter.name, r.meter.meter_code or '', r.meter.resource_type,
+                r.meter.unit, None, r.value,
+                (day_consumption + night_consumption)
+                if day_consumption is not None and night_consumption is not None
+                else None,
+                prev.day_value if prev else None, r.day_value, day_consumption,
+                prev.night_value if prev else None, r.night_value, night_consumption,
+                r.note or '', r.user.username if r.user else '',
+                r.entered_at.strftime('%Y-%m-%d %H:%M')
+            ])
+        else:
+            consumption = r.value - prev.value if prev else None
+            ws.append([
+                period, r.meter.category.center.name, r.meter.category.name,
+                r.meter.name, r.meter.meter_code or '', r.meter.resource_type,
+                r.meter.unit, prev.value if prev else None, r.value, consumption,
+                None, None, None, None, None, None,
+                r.note or '', r.user.username if r.user else '',
+                r.entered_at.strftime('%Y-%m-%d %H:%M')
+            ])
     for cell in ws[1]:
         cell.font = Font(bold=True, color='FFFFFF'); cell.fill = PatternFill('solid', fgColor='174A6E'); cell.alignment = Alignment(wrap_text=True)
     ws.freeze_panes = 'A2'; ws.auto_filter.ref = ws.dimensions
