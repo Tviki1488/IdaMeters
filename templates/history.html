@@ -41,13 +41,13 @@
     <table class="history-table">
         <thead>
             <tr>
-                <th>Objekt / kategooria</th>
+                <th>Objekt</th>
+                <th>Kategooria</th>
                 <th>Mõõdik</th>
                 <th>Ressurss</th>
-                <th>Eelmine</th>
-                <th>Praegune</th>
-                <th>Tarbitud</th>
-                <th>Tariifid</th>
+                <th>Eelmine kokku</th>
+                <th>Praegune kokku</th>
+                <th>Kokku tarbitud</th>
                 <th>Sisestaja</th>
                 {% if logged_in_user and logged_in_user.role == 'admin' %}
                 <th>Tegevused</th>
@@ -67,68 +67,89 @@
             {% endfor %}
 
             <tr>
-                <td data-label="Objekt / kategooria">
-                    <strong>{{ r.meter.category.center.name }}</strong>
-                    <span class="history-subtext">{{ r.meter.category.name }}</span>
+                <td data-label="Objekt">
+                    {{ r.meter.category.center.name }}
+                </td>
+
+                <td data-label="Kategooria">
+                    {{ r.meter.category.name }}
                 </td>
 
                 <td data-label="Mõõdik">
                     <strong>{{ r.meter.name }}</strong>
+
                     {% if r.meter.tariff_mode == 'dual' %}
                     <span class="tariff-badge table-badge">2 tariifi</span>
-                    {% endif %}
-                </td>
 
-                <td data-label="Ressurss">{{ r.meter.resource_type }}</td>
-
-                <td data-label="Eelmine">
-                    {{ p.value.value|num if p.value else '—' }}
-                </td>
-
-                <td data-label="Praegune">
-                    <strong>{{ r.value|num }}</strong>
-                    {{ r.meter.unit }}
-                </td>
-
-                <td data-label="Tarbitud">
-                    <strong>
-                        {{ (r.value - p.value.value)|num if p.value else '—' }}
-                    </strong>
-                    {% if p.value %}{{ r.meter.unit }}{% endif %}
-                </td>
-
-                <td data-label="Tariifid">
-                    {% if r.meter.tariff_mode == 'dual' %}
                     <details class="history-tariff-details">
-                        <summary>Vaata tariife</summary>
+                        <summary>Näita päev / öö</summary>
 
                         <div class="history-detail-grid">
                             <div class="history-detail-panel history-day">
-                                <strong>Päev</strong>
-                                <span>Eelmine: {{ p.value.day_value|num if p.value and p.value.day_value is not none else '—' }}</span>
-                                <span>Praegune: {{ r.day_value|num if r.day_value is not none else '—' }}</span>
+                                <strong>☀ Päev</strong>
+
+                                <span>Eelmine:
+                                    {{ p.value.day_value|num
+                                       if p.value and p.value.day_value is not none
+                                       else '—' }}
+                                </span>
+
+                                <span>Praegune:
+                                    {{ r.day_value|num
+                                       if r.day_value is not none else '—' }}
+                                </span>
+
                                 <span>Tarbitud:
-                                    {% if p.value and p.value.day_value is not none and r.day_value is not none %}
-                                        {{ (r.day_value - p.value.day_value)|num }}
-                                    {% else %}—{% endif %}
+                                    {{ (r.day_value - p.value.day_value)|num
+                                       if p.value
+                                       and p.value.day_value is not none
+                                       and r.day_value is not none
+                                       else '—' }}
                                 </span>
                             </div>
 
                             <div class="history-detail-panel history-night">
-                                <strong>Öö</strong>
-                                <span>Eelmine: {{ p.value.night_value|num if p.value and p.value.night_value is not none else '—' }}</span>
-                                <span>Praegune: {{ r.night_value|num if r.night_value is not none else '—' }}</span>
+                                <strong>☾ Öö</strong>
+
+                                <span>Eelmine:
+                                    {{ p.value.night_value|num
+                                       if p.value and p.value.night_value is not none
+                                       else '—' }}
+                                </span>
+
+                                <span>Praegune:
+                                    {{ r.night_value|num
+                                       if r.night_value is not none else '—' }}
+                                </span>
+
                                 <span>Tarbitud:
-                                    {% if p.value and p.value.night_value is not none and r.night_value is not none %}
-                                        {{ (r.night_value - p.value.night_value)|num }}
-                                    {% else %}—{% endif %}
+                                    {{ (r.night_value - p.value.night_value)|num
+                                       if p.value
+                                       and p.value.night_value is not none
+                                       and r.night_value is not none
+                                       else '—' }}
                                 </span>
                             </div>
                         </div>
                     </details>
-                    {% else %}
-                    <span class="muted">—</span>
                     {% endif %}
+                </td>
+
+                <td data-label="Ressurss">
+                    {{ r.meter.resource_type }}
+                </td>
+
+                <td data-label="Eelmine kokku">
+                    {{ p.value.value|num if p.value else '—' }}
+                </td>
+
+                <td data-label="Praegune kokku">
+                    <strong>{{ r.value|num }}</strong>
+                    {{ r.meter.unit }}
+                </td>
+
+                <td data-label="Kokku tarbitud">
+                    {{ (r.value - p.value.value)|num if p.value else '—' }}
                 </td>
 
                 <td data-label="Sisestaja">
