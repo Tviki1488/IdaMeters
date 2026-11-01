@@ -184,12 +184,46 @@
 
                                             </form>
 
-                                            <form method="post" action="{{ url_for('admin_archive_meter', meter_id=m.id) }}">
-                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button class="button button-quiet button-small" type="submit">
-                                                    {% if m.active %}Lõpeta kasutamine{% else %}Aktiveeri mõõdik{% endif %}
-                                                </button>
-                                            </form>
+                                           <div class="meter-admin-actions">
+
+    <form method="post"
+          action="{{ url_for('admin_archive_meter', meter_id=m.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <button class="button button-quiet button-small" type="submit">
+            {% if m.active %}Lõpeta kasutamine{% else %}Aktiveeri mõõdik{% endif %}
+        </button>
+    </form>
+
+    <form method="post"
+          action="{{ url_for('admin_delete_meter', meter_id=m.id) }}"
+          onsubmit="return confirm('Kas oled kindel, et soovid selle mõõdiku jäädavalt kustutada? Kõik mõõdiku näidud kustutatakse samuti. Seda tegevust ei saa tagasi võtta.');">
+
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <button type="submit"
+                class="meter-delete-button"
+                title="Kustuta mõõdik jäädavalt"
+                aria-label="Kustuta mõõdik jäädavalt">
+
+            <svg viewBox="0 0 24 24"
+                 width="17"
+                 height="17"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="1.8"
+                 stroke-linecap="round"
+                 stroke-linejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M8 6V4h8v2"/>
+                <path d="M19 6l-1 14H6L5 6"/>
+                <path d="M10 11v5M14 11v5"/>
+            </svg>
+
+        </button>
+    </form>
+
+</div>
 
                                         </div>
 
