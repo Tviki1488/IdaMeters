@@ -935,106 +935,43 @@
         margin: 10px 0 0;
     }
 }
-/* Mobile fix – month selector and Ava kuu button */
+/* Objektid – mobile month selector */
 
-@media (max-width: 700px) {
-    .month-selector,
-    .period-selector,
-    .filter-bar {
-        flex-wrap: wrap;
-    }
-
-    .month-selector > *,
-    .period-selector > * {
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-
-    .month-selector button,
-    .period-selector button {
-        width: 100%;
-        margin: 10px 0 0;
-    }
-}
-/* Mobile – fix month selector on Objektid page */
-
-@media (max-width: 700px) {
-
-    .page-heading {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 22px;
-    }
-
-    .period-form {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-        width: 100%;
-        min-width: 0;
-        box-sizing: border-box;
-    }
-
-    .period-form label {
-        width: 100%;
-    }
-
-    .period-form input[type="month"] {
-        display: block;
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-
-    .period-form button {
-        display: block;
-        width: 100%;
-        min-height: 54px;
-        margin: 0;
-        box-sizing: border-box;
-    }
-}
-/* iPhone Safari – month selector responsive fix */
-
-@media screen and (max-width: 700px) {
-
+@media screen and (max-width: 600px) {
     .page-heading {
         display: flex;
         flex-direction: column;
         align-items: stretch;
         width: 100%;
         min-width: 0;
-        box-sizing: border-box;
     }
 
     .period-form {
         display: flex;
         flex-direction: column;
         align-items: stretch;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
         gap: 12px;
-
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-        box-sizing: border-box;
     }
 
     .period-form label {
         display: block;
         width: 100%;
+        min-width: 0;
     }
 
     .period-form input[type="month"] {
         display: block;
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-        height: 56px;
-        box-sizing: border-box;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        height: 54px;
         margin: 0;
+        box-sizing: border-box;
+        -webkit-appearance: none;
+        appearance: none;
     }
 
     .period-form button {
@@ -1042,8 +979,8 @@
         width: 100%;
         min-width: 0;
         max-width: 100%;
-        height: 56px;
-        box-sizing: border-box;
+        height: 54px;
         margin: 0;
+        box-sizing: border-box;
     }
 }
