@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file, abort
 from flask_wtf.csrf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect, text
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 from openpyxl import Workbook
@@ -58,6 +59,7 @@ class Meter(db.Model):
     meter_code = db.Column(db.String(100), nullable=True)
     resource_type = db.Column(db.String(40), nullable=False) # Elekter, Külm vesi, Soe vesi, Gaas, Muu
     unit = db.Column(db.String(20), nullable=False, default='m³')
+    tariff_mode = db.Column(db.String(10), nullable=False, default='single')
     active = db.Column(db.Boolean, nullable=False, default=True)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     readings = db.relationship('Reading', backref='meter', cascade='all, delete-orphan')
@@ -67,6 +69,8 @@ class Reading(db.Model):
     meter_id = db.Column(db.Integer, db.ForeignKey('meter.id'), nullable=False)
     period = db.Column(db.String(7), nullable=False) # YYYY-MM
     value = db.Column(db.Float, nullable=False)
+    day_value = db.Column(db.Float, nullable=True)
+    night_value = db.Column(db.Float, nullable=True)
     note = db.Column(db.String(500), nullable=True)
     entered_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     entered_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -178,48 +182,190 @@ def center_view(center_id):
             rows.append({'meter': meter, 'category': cat, 'reading': reading, 'previous': previous_reading(meter.id, period)})
     return render_template('center.html', center=center, categories=categories, rows=rows, period=period, total=total, completed=completed)
 
-@app.route('/category/<int:category_id>/readings', methods=['GET','POST'])
+
+@app.route('/category/<int:category_id>/readings', methods=['GET', 'POST'])
 @login_required
 def category_readings(category_id):
     category = db.get_or_404(Category, category_id)
     period = request.values.get('period', date.today().strftime('%Y-%m'))
-    if not valid_period(period): period = date.today().strftime('%Y-%m')
+
+    if not valid_period(period):
+        period = date.today().strftime('%Y-%m')
+
     meters = [m for m in category.meters if m.active]
+
     if request.method == 'POST':
         saved = 0
         errors = []
+
         for meter in meters:
-            raw = request.form.get(f'value_{meter.id}', '').strip().replace(',', '.')
             note = request.form.get(f'note_{meter.id}', '').strip()
-            if raw == '': continue # blank means leave unchanged, not zero
-            try:
-                value = float(raw)
-                if value < 0: raise ValueError()
-            except ValueError:
-                errors.append(f'{meter.name}: sisesta nullist suurem või võrdne arv.'); continue
             previous = previous_reading(meter.id, period)
-            if previous and value < previous.value:
-                errors.append(f'{meter.name}: uus näit on väiksem kui eelmine ({previous.value:g}). Kontrolli väärtust.')
-                continue
-            reading = Reading.query.filter_by(meter_id=meter.id, period=period).first()
-            if reading:
-                reading.value = value; reading.note = note; reading.entered_by = current_user().id; reading.updated_at = datetime.utcnow()
+
+            if meter.tariff_mode == 'dual':
+                raw_day = request.form.get(
+                    f'day_value_{meter.id}', ''
+                ).strip().replace(',', '.')
+
+                raw_night = request.form.get(
+                    f'night_value_{meter.id}', ''
+                ).strip().replace(',', '.')
+
+                if raw_day == '' and raw_night == '':
+                    continue
+
+                if raw_day == '' or raw_night == '':
+                    errors.append(
+                        f'{meter.name}: sisesta nii päeva- kui ka öönäit.'
+                    )
+                    continue
+
+                try:
+                    day_value = float(raw_day)
+                    night_value = float(raw_night)
+
+                    if (
+                        day_value < 0
+                        or night_value < 0
+                        or not __import__('math').isfinite(day_value)
+                        or not __import__('math').isfinite(night_value)
+                    ):
+                        raise ValueError()
+
+                except ValueError:
+                    errors.append(
+                        f'{meter.name}: kontrolli päeva- ja öönäidu väärtusi.'
+                    )
+                    continue
+
+                if previous and previous.day_value is not None:
+                    if day_value < previous.day_value:
+                        errors.append(
+                            f'{meter.name}: päevanäit on väiksem kui eelmine.'
+                        )
+                        continue
+
+                if previous and previous.night_value is not None:
+                    if night_value < previous.night_value:
+                        errors.append(
+                            f'{meter.name}: öönäit on väiksem kui eelmine.'
+                        )
+                        continue
+
+                total_value = day_value + night_value
+
+                reading = Reading.query.filter_by(
+                    meter_id=meter.id,
+                    period=period
+                ).first()
+
+                if reading:
+                    reading.value = total_value
+                    reading.day_value = day_value
+                    reading.night_value = night_value
+                    reading.note = note
+                    reading.entered_by = current_user().id
+                    reading.updated_at = datetime.utcnow()
+                else:
+                    reading = Reading(
+                        meter_id=meter.id,
+                        period=period,
+                        value=total_value,
+                        day_value=day_value,
+                        night_value=night_value,
+                        note=note,
+                        entered_by=current_user().id
+                    )
+                    db.session.add(reading)
+
             else:
-                reading = Reading(meter_id=meter.id, period=period, value=value, note=note, entered_by=current_user().id)
-                db.session.add(reading)
+                raw = request.form.get(
+                    f'value_{meter.id}', ''
+                ).strip().replace(',', '.')
+
+                if raw == '':
+                    continue
+
+                try:
+                    value = float(raw)
+
+                    if value < 0 or not __import__('math').isfinite(value):
+                        raise ValueError()
+
+                except ValueError:
+                    errors.append(
+                        f'{meter.name}: sisesta korrektne näit.'
+                    )
+                    continue
+
+                if previous and value < previous.value:
+                    errors.append(
+                        f'{meter.name}: uus näit on väiksem kui eelmine '
+                        f'({previous.value:g}). Kontrolli väärtust.'
+                    )
+                    continue
+
+                reading = Reading.query.filter_by(
+                    meter_id=meter.id,
+                    period=period
+                ).first()
+
+                if reading:
+                    reading.value = value
+                    reading.day_value = None
+                    reading.night_value = None
+                    reading.note = note
+                    reading.entered_by = current_user().id
+                    reading.updated_at = datetime.utcnow()
+                else:
+                    reading = Reading(
+                        meter_id=meter.id,
+                        period=period,
+                        value=value,
+                        note=note,
+                        entered_by=current_user().id
+                    )
+                    db.session.add(reading)
+
             saved += 1
+
         if saved:
-            log_action('readings_saved', f'{category.center.name} / {category.name} / {period}: {saved} näitu')
+            log_action(
+                'readings_saved',
+                f'{category.center.name} / {category.name} / '
+                f'{period}: {saved} näitu'
+            )
             db.session.commit()
             flash(f'Salvestatud näite: {saved}.', 'success')
-        if errors:
-            for error in errors: flash(error, 'error')
-        return redirect(url_for('category_readings', category_id=category.id, period=period))
-    rows = []
-    for m in meters:
-        rows.append({'meter': m, 'reading': Reading.query.filter_by(meter_id=m.id, period=period).first(), 'previous': previous_reading(m.id, period)})
-    return render_template('category.html', category=category, rows=rows, period=period)
 
+        if errors:
+            for error in errors:
+                flash(error, 'error')
+
+        return redirect(url_for(
+            'category_readings',
+            category_id=category.id,
+            period=period
+        ))
+
+    rows = []
+
+    for meter in meters:
+        rows.append({
+            'meter': meter,
+            'reading': Reading.query.filter_by(
+                meter_id=meter.id,
+                period=period
+            ).first(),
+            'previous': previous_reading(meter.id, period)
+        })
+
+    return render_template(
+        'category.html',
+        category=category,
+        rows=rows,
+        period=period
+    )
 @app.route('/history')
 @login_required
 def history():
@@ -236,24 +382,86 @@ def history():
 @admin_required
 def edit_reading(reading_id):
     reading = db.get_or_404(Reading, reading_id)
-    raw_value = request.form.get('value', '').strip().replace(',', '.')
     note = request.form.get('note', '').strip()
+    previous = previous_reading(reading.meter_id, reading.period)
 
     try:
-        new_value = float(raw_value)
-        if new_value < 0 or not __import__('math').isfinite(new_value):
-            raise ValueError()
-    except ValueError:
-        flash('Sisesta korrektne nullist suurem või võrdne näit.', 'error')
+        if reading.meter.tariff_mode == 'dual':
+            raw_day = request.form.get('day_value', '').strip().replace(',', '.')
+            raw_night = request.form.get('night_value', '').strip().replace(',', '.')
+
+            day_value = float(raw_day)
+            night_value = float(raw_night)
+
+            if (
+                day_value < 0
+                or night_value < 0
+                or not __import__('math').isfinite(day_value)
+                or not __import__('math').isfinite(night_value)
+            ):
+                raise ValueError()
+
+            if previous and previous.day_value is not None:
+                if day_value < previous.day_value:
+                    flash(
+                        'Päevanäit ei tohi olla väiksem eelmisest näidust.',
+                        'error'
+                    )
+                    return redirect(url_for(
+                        'history',
+                        period=reading.period,
+                        center_id=reading.meter.category.center_id
+                    ))
+
+            if previous and previous.night_value is not None:
+                if night_value < previous.night_value:
+                    flash(
+                        'Öönäit ei tohi olla väiksem eelmisest näidust.',
+                        'error'
+                    )
+                    return redirect(url_for(
+                        'history',
+                        period=reading.period,
+                        center_id=reading.meter.category.center_id
+                    ))
+
+            old_value = reading.value
+            reading.day_value = day_value
+            reading.night_value = night_value
+            reading.value = day_value + night_value
+
+        else:
+            raw_value = request.form.get('value', '').strip().replace(',', '.')
+            new_value = float(raw_value)
+
+            if new_value < 0 or not __import__('math').isfinite(new_value):
+                raise ValueError()
+
+            if previous and new_value < previous.value:
+                flash(
+                    'Uus näit ei tohi olla väiksem eelmisest näidust.',
+                    'error'
+                )
+                return redirect(url_for(
+                    'history',
+                    period=reading.period,
+                    center_id=reading.meter.category.center_id
+                ))
+
+            old_value = reading.value
+            reading.value = new_value
+            reading.day_value = None
+            reading.night_value = None
+
+    except (ValueError, TypeError):
+        flash('Sisesta korrektsed näidud.', 'error')
         return redirect(url_for(
             'history',
             period=reading.period,
             center_id=reading.meter.category.center_id
         ))
 
-    old_value = reading.value
     old_note = reading.note or ''
-    reading.value = new_value
     reading.note = note or None
     reading.updated_at = datetime.utcnow()
 
@@ -261,7 +469,7 @@ def edit_reading(reading_id):
         'reading_edited',
         f'{reading.meter.category.center.name} / '
         f'{reading.meter.category.name} / {reading.meter.name}; '
-        f'period={reading.period}; value={old_value} -> {new_value}; '
+        f'period={reading.period}; value={old_value} -> {reading.value}; '
         f'note_changed={old_note != (note or "")}'
     )
     db.session.commit()
@@ -283,11 +491,49 @@ def export_xlsx():
     if center_id: query = query.filter(Center.id == center_id)
     readings = query.order_by(Center.sort_order, Center.name, Category.sort_order, Meter.sort_order).all()
     wb = Workbook(); ws = wb.active; ws.title = 'Näidud'
-    ws.append(['Periood','Kaubanduskeskus','Kategooria','Mõõdik','Mõõdiku kood','Ressurss','Ühik','Eelmine näit','Praegune näit','Tarbitud','Märkus','Sisestaja','Sisestatud'])
+    ws.append([
+        'Periood', 'Kaubanduskeskus', 'Kategooria', 'Mõõdik',
+        'Mõõdiku kood', 'Ressurss', 'Ühik',
+        'Eelmine näit', 'Praegune näit', 'Tarbitud',
+        'Päeva eelmine näit', 'Päeva praegune näit', 'Päeva tarbimine',
+        'Öö eelmine näit', 'Öö praegune näit', 'Öö tarbimine',
+        'Märkus', 'Sisestaja', 'Sisestatud'
+    ])
     for r in readings:
         prev = previous_reading(r.meter_id, period)
-        consumption = r.value - prev.value if prev else None
-        ws.append([period, r.meter.category.center.name, r.meter.category.name, r.meter.name, r.meter.meter_code or '', r.meter.resource_type, r.meter.unit, prev.value if prev else None, r.value, consumption, r.note or '', r.user.username if r.user else '', r.entered_at.strftime('%Y-%m-%d %H:%M')])
+        if r.meter.tariff_mode == 'dual':
+            day_consumption = (
+                r.day_value - prev.day_value
+                if prev and prev.day_value is not None and r.day_value is not None
+                else None
+            )
+            night_consumption = (
+                r.night_value - prev.night_value
+                if prev and prev.night_value is not None and r.night_value is not None
+                else None
+            )
+            ws.append([
+                period, r.meter.category.center.name, r.meter.category.name,
+                r.meter.name, r.meter.meter_code or '', r.meter.resource_type,
+                r.meter.unit, None, r.value,
+                (day_consumption + night_consumption)
+                if day_consumption is not None and night_consumption is not None
+                else None,
+                prev.day_value if prev else None, r.day_value, day_consumption,
+                prev.night_value if prev else None, r.night_value, night_consumption,
+                r.note or '', r.user.username if r.user else '',
+                r.entered_at.strftime('%Y-%m-%d %H:%M')
+            ])
+        else:
+            consumption = r.value - prev.value if prev else None
+            ws.append([
+                period, r.meter.category.center.name, r.meter.category.name,
+                r.meter.name, r.meter.meter_code or '', r.meter.resource_type,
+                r.meter.unit, prev.value if prev else None, r.value, consumption,
+                None, None, None, None, None, None,
+                r.note or '', r.user.username if r.user else '',
+                r.entered_at.strftime('%Y-%m-%d %H:%M')
+            ])
     for cell in ws[1]:
         cell.font = Font(bold=True, color='FFFFFF'); cell.fill = PatternFill('solid', fgColor='174A6E'); cell.alignment = Alignment(wrap_text=True)
     ws.freeze_panes = 'A2'; ws.auto_filter.ref = ws.dimensions
@@ -359,29 +605,83 @@ def admin_archive_category(category_id):
     c = db.get_or_404(Category, category_id); c.active = not c.active
     log_action('category_active_changed', f'{c.name}: active={c.active}'); db.session.commit(); flash('Kategooria olek muudetud.', 'success'); return redirect(url_for('admin_home'))
 
+
 @app.route('/admin/meter', methods=['POST'])
 @admin_required
 def admin_add_meter():
-    category_id = request.form.get('category_id', type=int); category = db.session.get(Category, category_id) if category_id else None
-    name = request.form.get('name','').strip(); resource = request.form.get('resource_type','Muu'); unit = request.form.get('unit','').strip()
-    allowed = {'Elekter','Külm vesi','Soe vesi','Gaas','Muu'}
+    category_id = request.form.get('category_id', type=int)
+    category = db.session.get(Category, category_id) if category_id else None
+
+    name = request.form.get('name', '').strip()
+    resource = request.form.get('resource_type', 'Muu')
+    unit = request.form.get('unit', '').strip()
+
+    allowed = {'Elekter', 'Külm vesi', 'Soe vesi', 'Gaas', 'Muu'}
+
+    tariff_mode = request.form.get('tariff_mode', 'single')
+    if resource != 'Elekter':
+        tariff_mode = 'single'
+
+    if tariff_mode not in {'single', 'dual'}:
+        tariff_mode = 'single'
+
     if not category or not name or resource not in allowed or not unit:
         flash('Kontrolli kategooriat, mõõdiku nime, ressurssi ja ühikut.', 'error')
     else:
-        m = Meter(category_id=category.id, name=name, meter_code=request.form.get('meter_code','').strip() or None, resource_type=resource, unit=unit, sort_order=request.form.get('sort_order', 0, type=int))
-        db.session.add(m); log_action('meter_created', f'{category.center.name} / {category.name} / {name}'); db.session.commit(); flash('Mõõdik lisatud.', 'success')
+        m = Meter(
+            category_id=category.id,
+            name=name,
+            meter_code=request.form.get('meter_code', '').strip() or None,
+            resource_type=resource,
+            unit=unit,
+            tariff_mode=tariff_mode,
+            sort_order=request.form.get('sort_order', 0, type=int)
+        )
+
+        db.session.add(m)
+        log_action('meter_created', f'{category.center.name} / {category.name} / {name}')
+        db.session.commit()
+        flash('Mõõdik lisatud.', 'success')
+
     return redirect(url_for('admin_home'))
+
 
 @app.route('/admin/meter/<int:meter_id>/edit', methods=['POST'])
 @admin_required
 def admin_edit_meter(meter_id):
-    m = db.get_or_404(Meter, meter_id); name = request.form.get('name','').strip(); unit = request.form.get('unit','').strip()
-    resource = request.form.get('resource_type','Muu')
-    if name and unit and resource in {'Elekter','Külm vesi','Soe vesi','Gaas','Muu'}:
-        m.name=name; m.unit=unit; m.resource_type=resource; m.meter_code=request.form.get('meter_code','').strip() or None; m.sort_order=request.form.get('sort_order', m.sort_order, type=int)
-        log_action('meter_updated', m.name); db.session.commit(); flash('Mõõdik uuendatud.', 'success')
-    else: flash('Kontrolli mõõdiku andmeid.', 'error')
+    m = db.get_or_404(Meter, meter_id)
+
+    name = request.form.get('name', '').strip()
+    unit = request.form.get('unit', '').strip()
+    resource = request.form.get('resource_type', 'Muu')
+
+    allowed = {'Elekter', 'Külm vesi', 'Soe vesi', 'Gaas', 'Muu'}
+
+    tariff_mode = request.form.get('tariff_mode', 'single')
+    if resource != 'Elekter':
+        tariff_mode = 'single'
+
+    if tariff_mode not in {'single', 'dual'}:
+        tariff_mode = 'single'
+
+    if name and unit and resource in allowed:
+        m.name = name
+        m.unit = unit
+        m.resource_type = resource
+        m.meter_code = request.form.get('meter_code', '').strip() or None
+        m.sort_order = request.form.get('sort_order', m.sort_order, type=int)
+        m.tariff_mode = tariff_mode
+
+        log_action('meter_updated', name)
+        db.session.commit()
+        flash('Mõõdik uuendatud.', 'success')
+    else:
+        flash('Kontrolli mõõdiku andmeid.', 'error')
+
     return redirect(url_for('admin_home'))
+
+
+
 
 @app.route('/admin/meter/<int:meter_id>/archive', methods=['POST'])
 @admin_required
@@ -424,6 +724,29 @@ def not_found(_): return render_template('error.html', code=404, message='Lehte 
 
 with app.app_context():
     db.create_all()
+
+    inspector = inspect(db.engine)
+
+    meter_columns = [column['name'] for column in inspector.get_columns('meter')]
+
+    if 'tariff_mode' not in meter_columns:
+        db.session.execute(text(
+            "ALTER TABLE meter ADD COLUMN tariff_mode VARCHAR(10) NOT NULL DEFAULT 'single'"
+        ))
+
+    reading_columns = [column['name'] for column in inspector.get_columns('reading')]
+
+    if 'day_value' not in reading_columns:
+        db.session.execute(text(
+            "ALTER TABLE reading ADD COLUMN day_value FLOAT"
+        ))
+
+    if 'night_value' not in reading_columns:
+        db.session.execute(text(
+            "ALTER TABLE reading ADD COLUMN night_value FLOAT"
+        ))
+
+    db.session.commit()
     # Optional first-run admin bootstrap. Never hardcode production credentials.
     bootstrap_user = os.environ.get('BOOTSTRAP_ADMIN_USER')
     bootstrap_password = os.environ.get('BOOTSTRAP_ADMIN_PASSWORD')

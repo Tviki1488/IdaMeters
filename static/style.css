@@ -135,3 +135,865 @@
 .login-card > .muted {
     margin-bottom: 24px;
 }
+
+/* =========================================
+   FORUS ARVESTID — TWO TARIFF METERS
+   ========================================= */
+
+.tariff-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 11px;
+    border-radius: 20px;
+    background: #e9eefc;
+    color: #4057a5;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.table-badge {
+    margin-left: 5px;
+}
+
+.dual-tariff-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin: 18px 0;
+}
+
+.tariff-panel {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid #e3e7ee;
+    border-radius: 14px;
+    background: #fafbfc;
+}
+
+.tariff-day {
+    border-top: 3px solid #e8ad42;
+    background: #fffaf0;
+}
+
+.tariff-night {
+    border-top: 3px solid #6579ad;
+    background: #f4f6fc;
+}
+
+.tariff-heading {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 16px;
+    font-size: 16px;
+}
+
+.tariff-day .tariff-heading span {
+    color: #d99a25;
+    font-size: 23px;
+}
+
+.tariff-night .tariff-heading span {
+    color: #526a9f;
+    font-size: 23px;
+}
+
+.tariff-panel .previous-value {
+    margin-bottom: 16px;
+}
+
+.tariff-panel .current-value {
+    display: block;
+    width: 100%;
+}
+
+.tariff-panel .current-value > span,
+.tariff-panel .previous-value > span {
+    display: block;
+    margin-bottom: 7px;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.tariff-panel .previous-value strong {
+    font-size: 21px;
+    font-weight: 700;
+}
+
+.tariff-panel .number-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.tariff-panel .number-input-wrap input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+}
+
+.tariff-panel .number-input-wrap > span {
+    flex-shrink: 0;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+@media (max-width: 600px) {
+    .dual-tariff-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .tariff-panel {
+        padding: 14px;
+    }
+}
+/* Admin — dual tariff setting */
+
+.tariff-setting {
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #f7f9fa;
+}
+
+.tariff-toggle {
+    display: flex;
+    flex-direction: row !important;
+    align-items: center;
+    gap: 11px !important;
+    cursor: pointer;
+}
+
+.tariff-toggle input[type="checkbox"] {
+    width: 19px;
+    height: 19px;
+    min-height: 19px;
+    flex-shrink: 0;
+    accent-color: var(--navy);
+}
+
+.tariff-toggle span {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.tariff-toggle strong {
+    font-size: 13px;
+    color: var(--ink);
+}
+
+.tariff-toggle small {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 400;
+}
+
+/* History — compact table and responsive layout */
+
+.history-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fff;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.history-table th {
+    padding: 14px 12px;
+    text-align: left;
+    white-space: nowrap;
+    color: var(--muted);
+    background: #f7f9fa;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--line);
+}
+
+.history-table td {
+    padding: 15px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+}
+
+.history-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.history-table tbody tr:hover {
+    background: #fafcfd;
+}
+
+.history-subtext {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.history-tariff-details summary {
+    cursor: pointer;
+    color: var(--navy);
+    font-weight: 700;
+    white-space: nowrap;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: #edf3f8;
+    list-style: none;
+    display: inline-block;
+}
+
+.history-tariff-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.history-tariff-details summary::after {
+    content: " +";
+}
+
+.history-tariff-details[open] summary::after {
+    content: " −";
+}
+
+.history-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    min-width: 280px;
+    margin-top: 10px;
+}
+
+.history-detail-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #f5f7f9;
+    font-size: 12px;
+}
+
+.history-detail-panel strong {
+    margin-bottom: 3px;
+    font-size: 13px;
+}
+
+.history-day {
+    border-top: 3px solid #e9a52d;
+}
+
+.history-night {
+    border-top: 3px solid #687fbd;
+}
+
+.history-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 210px;
+    margin-top: 12px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.history-edit-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Mobile history cards */
+
+@media (max-width: 700px) {
+    .history-table-wrap {
+        overflow: visible;
+        border: none;
+        background: transparent;
+    }
+
+    .history-table,
+    .history-table tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .history-table thead {
+        display: none;
+    }
+
+    .history-table tbody tr {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        margin-bottom: 14px;
+        padding: 8px 15px;
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        background: #fff;
+        box-shadow: 0 3px 12px rgba(20, 45, 65, 0.04);
+    }
+
+    .history-table tbody tr:hover {
+        background: #fff;
+    }
+
+    .history-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 14px;
+        width: 100%;
+        padding: 10px 0;
+        border-bottom: 1px solid #edf0f2;
+        text-align: right;
+    }
+
+    .history-table td:last-child {
+        border-bottom: none;
+    }
+
+    .history-table td::before {
+        content: attr(data-label);
+        flex: 0 0 38%;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+        text-align: left;
+    }
+
+    .history-table td > strong,
+    .history-table td > span,
+    .history-table td > details {
+        max-width: 62%;
+    }
+
+    .history-table td:first-child {
+        display: block;
+        text-align: left;
+        padding-top: 12px;
+    }
+
+    .history-table td:first-child::before {
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    .history-detail-grid {
+        grid-template-columns: 1fr;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .history-tariff-details[open] {
+        width: 100%;
+        text-align: left;
+    }
+
+    .history-tariff-details[open] .history-detail-grid {
+        text-align: left;
+    }
+
+    .history-edit-form {
+        min-width: 0;
+        width: 100%;
+        text-align: left;
+    }
+
+    .history-edit-details[open] {
+        width: 100%;
+        text-align: left;
+    }
+
+    .history-table td[colspan] {
+        display: block;
+        text-align: left;
+    }
+
+    .history-table td[colspan]::before {
+        display: none;
+    }
+}
+
+/* History table — prevent horizontal scrolling */
+
+.history-table {
+    width: 100%;
+    table-layout: fixed;
+    white-space: normal;
+}
+
+.history-table th,
+.history-table td {
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
+
+.history-table th {
+    font-size: 10px;
+    padding: 11px 8px;
+}
+
+.history-table td {
+    padding: 12px 8px;
+}
+
+.history-table td:nth-child(3) {
+    min-width: 150px;
+}
+
+@media (max-width: 700px) {
+    .history-table {
+        table-layout: auto;
+    }
+
+    .history-table td {
+        overflow-wrap: anywhere;
+    }
+}
+/* Fix: prevent dual-tariff details from overlapping history columns */
+
+.history-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+}
+
+.history-detail-panel {
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.history-tariff-details {
+    display: block;
+    max-width: 100%;
+}
+
+.history-tariff-details[open] {
+    width: 100%;
+    max-width: 100%;
+}
+
+@media (max-width: 700px) {
+    .history-table td[data-label="Mõõdik"] {
+        display: block;
+        text-align: left;
+    }
+
+    .history-table td[data-label="Mõõdik"] > * {
+        max-width: 100%;
+    }
+
+    .history-tariff-details[open] .history-detail-grid {
+        width: 100%;
+    }
+}
+/* =========================================
+   HISTORY – DUAL TARIFF DESIGN
+   ========================================= */
+
+.history-table {
+    table-layout: fixed;
+    width: 100%;
+    white-space: normal;
+}
+
+/* Give the meter column enough room */
+.history-table th:nth-child(1),
+.history-table td:nth-child(1) { width: 10%; }
+
+.history-table th:nth-child(2),
+.history-table td:nth-child(2) { width: 10%; }
+
+.history-table th:nth-child(3),
+.history-table td:nth-child(3) { width: 22%; }
+
+.history-table th:nth-child(4),
+.history-table td:nth-child(4) { width: 8%; }
+
+.history-table th:nth-child(5),
+.history-table td:nth-child(5) { width: 11%; }
+
+.history-table th:nth-child(6),
+.history-table td:nth-child(6) { width: 12%; }
+
+.history-table th:nth-child(7),
+.history-table td:nth-child(7) { width: 11%; }
+
+.history-table th:nth-child(8),
+.history-table td:nth-child(8) { width: 8%; }
+
+.history-table th:nth-child(9),
+.history-table td:nth-child(9) { width: 8%; }
+
+/* Tariff badge */
+.history-table .table-badge {
+    display: inline-flex;
+    margin: 8px 0 10px;
+    align-items: center;
+}
+
+/* Expand button */
+.history-tariff-details {
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+
+.history-tariff-details summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #edf3f8;
+    color: #173c59;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+}
+
+.history-tariff-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.history-tariff-details summary::after {
+    content: "+";
+    font-size: 17px;
+}
+
+.history-tariff-details[open] summary::after {
+    content: "−";
+}
+
+/* Two tariff cards */
+.history-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    margin-top: 10px;
+}
+
+.history-detail-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 12px 10px;
+    border-radius: 12px;
+    background: #f7f9fb;
+    font-size: 11px;
+}
+
+.history-day {
+    border-top: 3px solid #f5b333;
+}
+
+.history-night {
+    border-top: 3px solid #6688d2;
+}
+
+.history-detail-heading {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 3px;
+    font-size: 14px;
+}
+
+.history-day .history-detail-heading span {
+    color: #e9a52d;
+    font-size: 19px;
+}
+
+.history-night .history-detail-heading span {
+    color: #5878bd;
+    font-size: 19px;
+}
+
+.history-detail-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.history-detail-row span {
+    color: #687789;
+    font-size: 10px;
+}
+
+.history-detail-row strong {
+    overflow-wrap: anywhere;
+    color: #173c59;
+    font-size: 12px;
+}
+
+.history-detail-consumption {
+    margin-top: 2px;
+    padding: 7px 8px;
+    border-radius: 8px;
+    font-size: 10px;
+    overflow-wrap: anywhere;
+}
+
+.history-detail-consumption strong {
+    display: block;
+    margin-top: 3px;
+    font-size: 14px;
+    color: #173c59;
+}
+
+.day-consumption {
+    background: #fff0ce;
+}
+
+.night-consumption {
+    background: #e2ecff;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+    .history-table th,
+    .history-table td {
+        width: auto !important;
+    }
+
+    .history-table td[data-label="Mõõdik"] {
+        display: block;
+        width: 100%;
+        text-align: left;
+    }
+
+    .history-table td[data-label="Mõõdik"] > * {
+        max-width: 100%;
+    }
+
+    .history-table .table-badge {
+        display: flex;
+        width: fit-content;
+        margin: 8px 0 10px;
+    }
+
+    .history-tariff-details {
+        width: 100%;
+    }
+
+    .history-detail-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .history-detail-panel {
+        padding: 14px;
+    }
+
+    .history-detail-row {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .history-detail-row strong {
+        text-align: right;
+    }
+}
+/* History edit modal */
+
+.history-edit-dialog {
+    width: min(440px, calc(100vw - 32px));
+    max-width: 440px;
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 20px 60px rgba(15, 30, 45, .25);
+    box-sizing: border-box;
+}
+
+.history-edit-dialog[open] {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+}
+
+.history-edit-dialog::backdrop {
+    background: rgba(15, 30, 45, .55);
+    backdrop-filter: blur(3px);
+}
+
+.history-edit-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.history-edit-header h2 {
+    margin: 0;
+    font-size: 21px;
+}
+
+.history-dialog-close {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 9px;
+    background: #edf2f6;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.history-edit-dialog .history-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+}
+
+.history-edit-dialog .history-edit-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.history-edit-dialog .history-edit-form input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.history-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+@media (max-width: 480px) {
+    .history-edit-dialog {
+        padding: 18px;
+    }
+
+    .history-edit-actions {
+        flex-direction: column-reverse;
+    }
+
+    .history-edit-actions button {
+        width: 100%;
+    }
+}
+/* Mobile fix – month selector and Ava kuu button */
+
+@media (max-width: 700px) {
+    .month-selector,
+    .period-selector,
+    .filter-bar {
+        flex-wrap: wrap;
+    }
+
+    .month-selector > *,
+    .period-selector > * {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .month-selector button,
+    .period-selector button {
+        width: 100%;
+        margin: 10px 0 0;
+    }
+}
+/* Mobile fix – month selector and Ava kuu button */
+
+@media (max-width: 700px) {
+    .month-selector,
+    .period-selector,
+    .filter-bar {
+        flex-wrap: wrap;
+    }
+
+    .month-selector > *,
+    .period-selector > * {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .month-selector button,
+    .period-selector button {
+        width: 100%;
+        margin: 10px 0 0;
+    }
+}
+/* Mobile – fix month selector on Objektid page */
+
+@media (max-width: 700px) {
+
+    .page-heading {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 22px;
+    }
+
+    .period-form {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    .period-form label {
+        width: 100%;
+    }
+
+    .period-form input[type="month"] {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .period-form button {
+        display: block;
+        width: 100%;
+        min-height: 54px;
+        margin: 0;
+        box-sizing: border-box;
+    }
+}

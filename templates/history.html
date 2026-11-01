@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 {% block title %}Ajalugu · Forus Arvestid{% endblock %}
 
@@ -21,17 +22,14 @@
         <select name="center_id">
             <option value="">Kõik objektid</option>
             {% for c in centers %}
-            <option value="{{ c.id }}"
-                {% if center_id == c.id %}selected{% endif %}>
+            <option value="{{ c.id }}" {% if center_id == c.id %}selected{% endif %}>
                 {{ c.name }}
             </option>
             {% endfor %}
         </select>
     </label>
 
-    <button class="button button-secondary" type="submit">
-        Filtreeri
-    </button>
+    <button class="button button-secondary" type="submit">Filtreeri</button>
 
     <a class="button button-primary"
        href="{{ url_for('export_xlsx', period=period, center_id=center_id) }}">
@@ -39,17 +37,17 @@
     </a>
 </form>
 
-<div class="table-wrap">
-    <table>
+<div class="history-table-wrap">
+    <table class="history-table">
         <thead>
             <tr>
                 <th>Objekt</th>
                 <th>Kategooria</th>
                 <th>Mõõdik</th>
                 <th>Ressurss</th>
-                <th>Eelmine</th>
-                <th>Praegune</th>
-                <th>Tarbitud</th>
+                <th>Eelmine kokku</th>
+                <th>Praegune kokku</th>
+                <th>Kokku tarbitud</th>
                 <th>Sisestaja</th>
                 {% if logged_in_user and logged_in_user.role == 'admin' %}
                 <th>Tegevused</th>
@@ -69,62 +67,196 @@
             {% endfor %}
 
             <tr>
-                <td>{{ r.meter.category.center.name }}</td>
-                <td>{{ r.meter.category.name }}</td>
-                <td>{{ r.meter.name }}</td>
-                <td>{{ r.meter.resource_type }}</td>
+                <td data-label="Objekt">
+                    {{ r.meter.category.center.name }}
+                </td>
 
-                <td>{{ p.value.value|num if p.value else '—' }}</td>
+                <td data-label="Kategooria">
+                    {{ r.meter.category.name }}
+                </td>
 
-                <td>
+                <td data-label="Mõõdik">
+                    <strong>{{ r.meter.name }}</strong>
+
+                    {% if r.meter.tariff_mode == 'dual' %}
+                    <span class="tariff-badge table-badge">2 tariifi</span>
+
+<details class="history-tariff-details">
+    <summary>Näita päev / öö</summary>
+
+    <div class="history-detail-grid">
+
+        <div class="history-detail-panel history-day">
+            <div class="history-detail-heading">
+                <span>☀</span>
+                <strong>Päev</strong>
+            </div>
+
+            <div class="history-detail-row">
+                <span>Eelmine</span>
+                <strong>
+                    {{ p.value.day_value|num
+                       if p.value and p.value.day_value is not none
+                       else '—' }}
+                </strong>
+            </div>
+
+            <div class="history-detail-row">
+                <span>Praegune</span>
+                <strong>
+                    {{ r.day_value|num
+                       if r.day_value is not none else '—' }}
+                </strong>
+            </div>
+
+            <div class="history-detail-consumption day-consumption">
+                Tarbitud:
+                <strong>
+                    {{ (r.day_value - p.value.day_value)|num
+                       if p.value
+                       and p.value.day_value is not none
+                       and r.day_value is not none
+                       else '—' }}
+                </strong>
+            </div>
+        </div>
+
+        <div class="history-detail-panel history-night">
+            <div class="history-detail-heading">
+                <span>☾</span>
+                <strong>Öö</strong>
+            </div>
+
+            <div class="history-detail-row">
+                <span>Eelmine</span>
+                <strong>
+                    {{ p.value.night_value|num
+                       if p.value and p.value.night_value is not none
+                       else '—' }}
+                </strong>
+            </div>
+
+            <div class="history-detail-row">
+                <span>Praegune</span>
+                <strong>
+                    {{ r.night_value|num
+                       if r.night_value is not none else '—' }}
+                </strong>
+            </div>
+
+            <div class="history-detail-consumption night-consumption">
+                Tarbitud:
+                <strong>
+                    {{ (r.night_value - p.value.night_value)|num
+                       if p.value
+                       and p.value.night_value is not none
+                       and r.night_value is not none
+                       else '—' }}
+                </strong>
+            </div>
+        </div>
+
+    </div>
+</details>
+                    </details>
+                    {% endif %}
+                </td>
+
+                <td data-label="Ressurss">
+                    {{ r.meter.resource_type }}
+                </td>
+
+                <td data-label="Eelmine kokku">
+                    {{ p.value.value|num if p.value else '—' }}
+                </td>
+
+                <td data-label="Praegune kokku">
                     <strong>{{ r.value|num }}</strong>
                     {{ r.meter.unit }}
                 </td>
 
-                <td>
+                <td data-label="Kokku tarbitud">
                     {{ (r.value - p.value.value)|num if p.value else '—' }}
                 </td>
 
-                <td>{{ r.user.username if r.user else '—' }}</td>
+                <td data-label="Sisestaja">
+                    {{ r.user.username if r.user else '—' }}
+                </td>
 
                 {% if logged_in_user and logged_in_user.role == 'admin' %}
-                <td>
-                    <details>
-                        <summary class="button button-secondary">
-                            Muuda
-                        </summary>
+                <td data-label="Tegevused">
+                    <details class="history-edit-details">
+                        <button
+    type="button"
+    class="button button-secondary"
+    onclick="this.nextElementSibling.showModal()">
+    Muuda
+</button>
 
-                        <form method="POST"
-                              action="{{ url_for('edit_reading', reading_id=r.id) }}"
-                              style="margin-top: 12px; min-width: 180px;">
+<dialog class="history-edit-dialog">
+    <div class="history-edit-header">
+        <h2>Näidu muutmine</h2>
+        <button type="button"
+                class="history-dialog-close"
+                onclick="this.closest('dialog').close()">
+            ×
+        </button>
+    </div>
 
-                            <input type="hidden"
-                                   name="csrf_token"
-                                   value="{{ csrf_token() }}">
+    <form method="POST"
+          action="{{ url_for('edit_reading', reading_id=r.id) }}"
+          class="history-edit-form">
 
-                            <label>
-                                Näit ({{ r.meter.unit }})
-                                <input type="number"
-                                       name="value"
-                                       step="any"
-                                       min="0"
-                                       value="{{ r.value }}"
-                                       required>
-                            </label>
+        <input type="hidden"
+               name="csrf_token"
+               value="{{ csrf_token() }}">
 
-                            <label>
-                                Märkus
-                                <input type="text"
-                                       name="note"
-                                       maxlength="500"
-                                       value="{{ r.note or '' }}">
-                            </label>
+        {% if r.meter.tariff_mode == 'dual' %}
+        <label>
+            Päevanäit ({{ r.meter.unit }})
+            <input type="number" name="day_value"
+                   step="any" min="0"
+                   value="{{ r.day_value if r.day_value is not none else '' }}"
+                   required>
+        </label>
 
-                            <button class="button button-primary"
-                                    type="submit">
-                                Salvesta
-                            </button>
-                        </form>
+        <label>
+            Öönäit ({{ r.meter.unit }})
+            <input type="number" name="night_value"
+                   step="any" min="0"
+                   value="{{ r.night_value if r.night_value is not none else '' }}"
+                   required>
+        </label>
+        {% else %}
+        <label>
+            Näit ({{ r.meter.unit }})
+            <input type="number" name="value"
+                   step="any" min="0"
+                   value="{{ r.value }}"
+                   required>
+        </label>
+        {% endif %}
+
+        <label>
+            Märkus
+            <input type="text" name="note"
+                   maxlength="500"
+                   value="{{ r.note or '' }}">
+        </label>
+
+        <div class="history-edit-actions">
+            <button type="button"
+                    class="button button-secondary"
+                    onclick="this.closest('dialog').close()">
+                Tühista
+            </button>
+
+            <button class="button button-primary" type="submit">
+                Salvesta
+            </button>
+        </div>
+    </form>
+</dialog>
                     </details>
                 </td>
                 {% endif %}
@@ -132,7 +264,7 @@
 
             {% else %}
             <tr>
-                <td colspan="9" class="table-empty">
+                <td colspan="{{ 9 if logged_in_user and logged_in_user.role == 'admin' else 8 }}">
                     Valitud filtritega näite ei leitud.
                 </td>
             </tr>
@@ -142,7 +274,7 @@
 </div>
 
 <p class="muted small-note">
-    Tarbitud kogus arvutatakse võrreldes eelmise salvestatud kuu näiduga.
+    Tarbimine arvutatakse võrreldes eelmise salvestatud kuu näiduga.
+    Kahetariifse arvesti päeva- ja öötarbimine arvutatakse eraldi.
 </p>
 {% endblock %}
-```
