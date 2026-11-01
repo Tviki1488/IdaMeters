@@ -81,56 +81,83 @@
                     {% if r.meter.tariff_mode == 'dual' %}
                     <span class="tariff-badge table-badge">2 tariifi</span>
 
-                    <details class="history-tariff-details">
-                        <summary>Näita päev / öö</summary>
+<details class="history-tariff-details">
+    <summary>Näita päev / öö</summary>
 
-                        <div class="history-detail-grid">
-                            <div class="history-detail-panel history-day">
-                                <strong>☀ Päev</strong>
+    <div class="history-detail-grid">
 
-                                <span>Eelmine:
-                                    {{ p.value.day_value|num
-                                       if p.value and p.value.day_value is not none
-                                       else '—' }}
-                                </span>
+        <div class="history-detail-panel history-day">
+            <div class="history-detail-heading">
+                <span>☀</span>
+                <strong>Päev</strong>
+            </div>
 
-                                <span>Praegune:
-                                    {{ r.day_value|num
-                                       if r.day_value is not none else '—' }}
-                                </span>
+            <div class="history-detail-row">
+                <span>Eelmine</span>
+                <strong>
+                    {{ p.value.day_value|num
+                       if p.value and p.value.day_value is not none
+                       else '—' }}
+                </strong>
+            </div>
 
-                                <span>Tarbitud:
-                                    {{ (r.day_value - p.value.day_value)|num
-                                       if p.value
-                                       and p.value.day_value is not none
-                                       and r.day_value is not none
-                                       else '—' }}
-                                </span>
-                            </div>
+            <div class="history-detail-row">
+                <span>Praegune</span>
+                <strong>
+                    {{ r.day_value|num
+                       if r.day_value is not none else '—' }}
+                </strong>
+            </div>
 
-                            <div class="history-detail-panel history-night">
-                                <strong>☾ Öö</strong>
+            <div class="history-detail-consumption day-consumption">
+                Tarbitud:
+                <strong>
+                    {{ (r.day_value - p.value.day_value)|num
+                       if p.value
+                       and p.value.day_value is not none
+                       and r.day_value is not none
+                       else '—' }}
+                </strong>
+            </div>
+        </div>
 
-                                <span>Eelmine:
-                                    {{ p.value.night_value|num
-                                       if p.value and p.value.night_value is not none
-                                       else '—' }}
-                                </span>
+        <div class="history-detail-panel history-night">
+            <div class="history-detail-heading">
+                <span>☾</span>
+                <strong>Öö</strong>
+            </div>
 
-                                <span>Praegune:
-                                    {{ r.night_value|num
-                                       if r.night_value is not none else '—' }}
-                                </span>
+            <div class="history-detail-row">
+                <span>Eelmine</span>
+                <strong>
+                    {{ p.value.night_value|num
+                       if p.value and p.value.night_value is not none
+                       else '—' }}
+                </strong>
+            </div>
 
-                                <span>Tarbitud:
-                                    {{ (r.night_value - p.value.night_value)|num
-                                       if p.value
-                                       and p.value.night_value is not none
-                                       and r.night_value is not none
-                                       else '—' }}
-                                </span>
-                            </div>
-                        </div>
+            <div class="history-detail-row">
+                <span>Praegune</span>
+                <strong>
+                    {{ r.night_value|num
+                       if r.night_value is not none else '—' }}
+                </strong>
+            </div>
+
+            <div class="history-detail-consumption night-consumption">
+                Tarbitud:
+                <strong>
+                    {{ (r.night_value - p.value.night_value)|num
+                       if p.value
+                       and p.value.night_value is not none
+                       and r.night_value is not none
+                       else '—' }}
+                </strong>
+            </div>
+        </div>
+
+    </div>
+</details>
                     </details>
                     {% endif %}
                 </td>
