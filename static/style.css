@@ -603,3 +603,219 @@
         width: 100%;
     }
 }
+/* =========================================
+   HISTORY – DUAL TARIFF DESIGN
+   ========================================= */
+
+.history-table {
+    table-layout: fixed;
+    width: 100%;
+    white-space: normal;
+}
+
+/* Give the meter column enough room */
+.history-table th:nth-child(1),
+.history-table td:nth-child(1) { width: 10%; }
+
+.history-table th:nth-child(2),
+.history-table td:nth-child(2) { width: 10%; }
+
+.history-table th:nth-child(3),
+.history-table td:nth-child(3) { width: 22%; }
+
+.history-table th:nth-child(4),
+.history-table td:nth-child(4) { width: 8%; }
+
+.history-table th:nth-child(5),
+.history-table td:nth-child(5) { width: 11%; }
+
+.history-table th:nth-child(6),
+.history-table td:nth-child(6) { width: 12%; }
+
+.history-table th:nth-child(7),
+.history-table td:nth-child(7) { width: 11%; }
+
+.history-table th:nth-child(8),
+.history-table td:nth-child(8) { width: 8%; }
+
+.history-table th:nth-child(9),
+.history-table td:nth-child(9) { width: 8%; }
+
+/* Tariff badge */
+.history-table .table-badge {
+    display: inline-flex;
+    margin: 8px 0 10px;
+    align-items: center;
+}
+
+/* Expand button */
+.history-tariff-details {
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+
+.history-tariff-details summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #edf3f8;
+    color: #173c59;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+}
+
+.history-tariff-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.history-tariff-details summary::after {
+    content: "+";
+    font-size: 17px;
+}
+
+.history-tariff-details[open] summary::after {
+    content: "−";
+}
+
+/* Two tariff cards */
+.history-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    margin-top: 10px;
+}
+
+.history-detail-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 12px 10px;
+    border-radius: 12px;
+    background: #f7f9fb;
+    font-size: 11px;
+}
+
+.history-day {
+    border-top: 3px solid #f5b333;
+}
+
+.history-night {
+    border-top: 3px solid #6688d2;
+}
+
+.history-detail-heading {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 3px;
+    font-size: 14px;
+}
+
+.history-day .history-detail-heading span {
+    color: #e9a52d;
+    font-size: 19px;
+}
+
+.history-night .history-detail-heading span {
+    color: #5878bd;
+    font-size: 19px;
+}
+
+.history-detail-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.history-detail-row span {
+    color: #687789;
+    font-size: 10px;
+}
+
+.history-detail-row strong {
+    overflow-wrap: anywhere;
+    color: #173c59;
+    font-size: 12px;
+}
+
+.history-detail-consumption {
+    margin-top: 2px;
+    padding: 7px 8px;
+    border-radius: 8px;
+    font-size: 10px;
+    overflow-wrap: anywhere;
+}
+
+.history-detail-consumption strong {
+    display: block;
+    margin-top: 3px;
+    font-size: 14px;
+    color: #173c59;
+}
+
+.day-consumption {
+    background: #fff0ce;
+}
+
+.night-consumption {
+    background: #e2ecff;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+    .history-table th,
+    .history-table td {
+        width: auto !important;
+    }
+
+    .history-table td[data-label="Mõõdik"] {
+        display: block;
+        width: 100%;
+        text-align: left;
+    }
+
+    .history-table td[data-label="Mõõdik"] > * {
+        max-width: 100%;
+    }
+
+    .history-table .table-badge {
+        display: flex;
+        width: fit-content;
+        margin: 8px 0 10px;
+    }
+
+    .history-tariff-details {
+        width: 100%;
+    }
+
+    .history-detail-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .history-detail-panel {
+        padding: 14px;
+    }
+
+    .history-detail-row {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .history-detail-row strong {
+        text-align: right;
+    }
+}
