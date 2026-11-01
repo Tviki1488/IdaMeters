@@ -251,3 +251,44 @@
         padding: 14px;
     }
 }
+/* Admin — dual tariff setting */
+
+.tariff-setting {
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #f7f9fa;
+}
+
+.tariff-toggle {
+    display: flex;
+    flex-direction: row !important;
+    align-items: center;
+    gap: 11px !important;
+    cursor: pointer;
+}
+
+.tariff-toggle input[type="checkbox"] {
+    width: 19px;
+    height: 19px;
+    min-height: 19px;
+    flex-shrink: 0;
+    accent-color: var(--navy);
+}
+
+.tariff-toggle span {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.tariff-toggle strong {
+    font-size: 13px;
+    color: var(--ink);
+}
+
+.tariff-toggle small {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 400;
+}
