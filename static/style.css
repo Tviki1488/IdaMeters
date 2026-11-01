@@ -1033,3 +1033,16 @@
         background: #f8fbfc;
     }
 }
+/* Fix meter row layout */
+.meter-admin > summary .status-dot {
+    flex: 0 0 9px;
+    width: 9px;
+    height: 9px;
+    min-width: 9px;
+    border-radius: 50%;
+}
+
+.meter-admin > summary span:nth-child(3) {
+    flex: 1 1 auto;
+    min-width: 0;
+}
