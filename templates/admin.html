@@ -601,24 +601,44 @@ document.addEventListener('DOMContentLoaded', function () {
                 list.insertBefore(draggedMeter, insertAfter ? target.nextElementSibling : target);
             });
 
-            list.addEventListener('drop', async function (event) {
+            let dropOccurred = false;
+
+            list.addEventListener('drop', function (event) {
                 if (!draggedMeter) return;
                 event.preventDefault();
                 clearDropMarkers();
+                dropOccurred = true;
+            });
 
-                const orderedIds = meterCards().map(function (card) {
+            // Save after dragend: at this point the browser has completed
+            // the DOM move, so the final order is read reliably.
+            list.addEventListener('dragend', async function () {
+                const finishedMeter = draggedMeter;
+                const previousOrder = originalOrder.slice();
+                const shouldSave = Boolean(finishedMeter && dropOccurred);
+                const orderedIds = shouldSave ? meterCards().map(function (card) {
                     return Number(card.dataset.meterId);
-                });
+                }) : [];
                 const csrfToken = list.closest('.nested-body')?.querySelector('input[name="csrf_token"]')?.value
                     || document.querySelector('input[name="csrf_token"]')?.value;
                 const categoryId = list.dataset.categoryId;
 
+                finishedMeter?.classList.remove('is-dragging');
+                draggedMeter = null;
+                originalOrder = [];
+                dropOccurred = false;
+                clearDropMarkers();
+
+                if (!shouldSave) return;
+
                 try {
                     const response = await fetch('/admin/category/' + categoryId + '/meters/reorder', {
                         method: 'POST',
+                        credentials: 'same-origin',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRFToken': csrfToken
+                            'X-CSRFToken': csrfToken,
+                            'Accept': 'application/json'
                         },
                         body: JSON.stringify({ meter_ids: orderedIds })
                     });
@@ -627,20 +647,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         throw new Error(result.message || 'Järjestuse salvestamine ebaõnnestus.');
                     }
                 } catch (error) {
-                    originalOrder.forEach(function (card) { list.appendChild(card); });
+                    previousOrder.forEach(function (card) { list.appendChild(card); });
                     window.alert(error.message || 'Mõõdikute järjestust ei saanud salvestada.');
-                } finally {
-                    draggedMeter?.classList.remove('is-dragging');
-                    draggedMeter = null;
-                    originalOrder = [];
-                    clearDropMarkers();
                 }
-            });
-
-            list.addEventListener('dragend', function () {
-                if (draggedMeter) draggedMeter.classList.remove('is-dragging');
-                draggedMeter = null;
-                clearDropMarkers();
             });
 
             list.querySelectorAll('.meter-drag-handle').forEach(function (handle) {
