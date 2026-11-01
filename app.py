@@ -143,10 +143,11 @@ def index():
     stats = {}
     for c in centers:
         meters = [
-    m for cat in c.categories if cat.active
-    for m in cat.meters
-    if m.active and m.deleted_at is None
-]
+            m
+            for cat in c.categories if cat.active
+            for m in cat.meters
+            if m.active and m.deleted_at is None
+        ]
         done = Reading.query.filter(Reading.period == period, Reading.meter_id.in_([m.id for m in meters])).count() if meters else 0
         stats[c.id] = (done, len(meters))
     return render_template('index.html', centers=centers, stats=stats, period=period)
@@ -686,6 +687,10 @@ def admin_reorder_meters(category_id):
 def admin_edit_meter(meter_id):
     m = db.get_or_404(Meter, meter_id)
 
+    if m.deleted_at is not None:
+        flash('Kustutatud mõõdikut ei saa muuta.', 'warning')
+        return redirect(url_for('admin_home'))
+
     name = request.form.get('name', '').strip()
     unit = request.form.get('unit', '').strip()
     resource = request.form.get('resource_type', 'Muu')
@@ -722,6 +727,11 @@ def admin_edit_meter(meter_id):
 @admin_required
 def admin_archive_meter(meter_id):
     m = db.get_or_404(Meter, meter_id)
+
+    if m.deleted_at is not None:
+        flash('Kustutatud mõõdiku olekut ei saa muuta.', 'warning')
+        return redirect(url_for('admin_home'))
+
     m.active = not m.active
 
     log_action(
@@ -804,10 +814,12 @@ with app.app_context():
     inspector = inspect(db.engine)
 
     meter_columns = [column['name'] for column in inspector.get_columns('meter')]
-if 'deleted_at' not in meter_columns:
-    db.session.execute(text(
-        "ALTER TABLE meter ADD COLUMN deleted_at DATETIME"
-    ))
+
+    if 'deleted_at' not in meter_columns:
+        db.session.execute(text(
+            "ALTER TABLE meter ADD COLUMN deleted_at TIMESTAMP"
+        ))
+
     if 'tariff_mode' not in meter_columns:
         db.session.execute(text(
             "ALTER TABLE meter ADD COLUMN tariff_mode VARCHAR(10) NOT NULL DEFAULT 'single'"
