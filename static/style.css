@@ -526,3 +526,40 @@
         display: none;
     }
 }
+
+/* History table — prevent horizontal scrolling */
+
+.history-table {
+    width: 100%;
+    table-layout: fixed;
+    white-space: normal;
+}
+
+.history-table th,
+.history-table td {
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
+
+.history-table th {
+    font-size: 10px;
+    padding: 11px 8px;
+}
+
+.history-table td {
+    padding: 12px 8px;
+}
+
+.history-table td:nth-child(3) {
+    min-width: 150px;
+}
+
+@media (max-width: 700px) {
+    .history-table {
+        table-layout: auto;
+    }
+
+    .history-table td {
+        overflow-wrap: anywhere;
+    }
+}
