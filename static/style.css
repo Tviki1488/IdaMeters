@@ -984,3 +984,52 @@
         box-sizing: border-box;
     }
 }
+
+/* Admin meter ordering — desktop drag handle only */
+.meter-drag-handle {
+    display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .meter-drag-handle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 24px;
+        width: 24px;
+        height: 28px;
+        margin-right: 2px;
+        border-radius: 6px;
+        color: #8295a1;
+        font-size: 20px;
+        line-height: 1;
+        cursor: grab;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .meter-drag-handle:hover {
+        color: var(--navy);
+        background: #edf3f7;
+    }
+
+    .meter-drag-handle:active {
+        cursor: grabbing;
+    }
+
+    .meter-admin.is-dragging {
+        opacity: .4;
+    }
+
+    .meter-admin.drag-over-before {
+        border-top: 2px solid var(--teal);
+    }
+
+    .meter-admin.drag-over-after {
+        border-bottom: 2px solid var(--teal);
+    }
+
+    .meter-admin-list:has(.meter-admin.is-dragging) {
+        background: #f8fbfc;
+    }
+}
