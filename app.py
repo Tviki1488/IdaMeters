@@ -713,6 +713,23 @@ def admin_edit_meter(meter_id):
 
 
 
+@app.route('/admin/meter/<int:meter_id>/archive', methods=['POST'])
+@admin_required
+def admin_archive_meter(meter_id):
+    m = db.get_or_404(Meter, meter_id)
+    m.active = not m.active
+
+    log_action(
+        'meter_active_changed',
+        f'{m.name}: active={m.active}'
+    )
+
+    db.session.commit()
+    flash('Mõõdiku olek muudetud.', 'success')
+
+    return redirect(url_for('admin_home'))
+
+
 @app.route('/admin/meter/<int:meter_id>/delete', methods=['POST'])
 @admin_required
 def admin_delete_meter(meter_id):
@@ -730,7 +747,10 @@ def admin_delete_meter(meter_id):
     db.session.delete(m)
     db.session.commit()
 
-    flash('Mõõdik ja kõik sellega seotud näidud kustutati jäädavalt.', 'success')
+    flash(
+        'Mõõdik ja kõik sellega seotud näidud kustutati jäädavalt.',
+        'success'
+    )
 
     return redirect(url_for('admin_home'))
 @admin_required
