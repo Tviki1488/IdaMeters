@@ -643,7 +643,7 @@ document.addEventListener('DOMContentLoaded', function () {
 document.addEventListener('DOMContentLoaded', function () {
     const restoreKey = 'forusAdminMeterEditRestore';
 
-    // Восстанавливаем открытые элементы и положение страницы
+    // Восстановление после сохранения или изменения состояния счётчика
     try {
         const saved = sessionStorage.getItem(restoreKey);
 
@@ -651,6 +651,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const state = JSON.parse(saved);
             sessionStorage.removeItem(restoreKey);
 
+            // Сначала раскрываем все ранее открытые элементы
             (state.openDetails || []).forEach(function (id) {
                 const element = document.querySelector(
                     '[data-restore-id="' + id + '"]'
@@ -674,20 +675,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
+            // Возвращаем счётчик на прежнее место экрана
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () {
-                    const form = meter
-                        ? meter.querySelector('.compact-form')
+                    const summary = meter
+                        ? meter.querySelector(':scope > summary')
                         : null;
 
-                    if (form && Number.isFinite(state.formViewportTop)) {
-                        const newTop =
-                            window.scrollY +
-                            form.getBoundingClientRect().top -
-                            state.formViewportTop;
+                    if (summary && Number.isFinite(state.meterViewportTop)) {
+                        const currentTop = summary.getBoundingClientRect().top;
+                        const newScroll = window.scrollY +
+                            currentTop - state.meterViewportTop;
 
                         window.scrollTo({
-                            top: Math.max(0, newTop),
+                            top: Math.max(0, newScroll),
                             behavior: 'auto'
                         });
                     } else if (Number.isFinite(state.scrollY)) {
@@ -701,34 +702,37 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     } catch (error) {
         sessionStorage.removeItem(restoreKey);
-        console.error('Scroll restoration error:', error);
+        console.error('Meter position restoration error:', error);
     }
 
-    // Запоминаем положение перед сохранением счётчика
-    document.querySelectorAll(
-        '.meter-admin .compact-form'
-    ).forEach(function (form) {
+    // Сохраняем состояние перед ЛЮБЫМ действием внутри счётчика
+    document.addEventListener('submit', function (event) {
+        const form = event.target.closest('.meter-admin form');
+        if (!form) return;
 
-        form.addEventListener('submit', function () {
-            const meter = form.closest('.meter-admin');
-            if (!meter) return;
+        const meter = form.closest('.meter-admin');
+        if (!meter) return;
 
-            const openDetails = Array.from(
-                document.querySelectorAll(
-                    '.admin-item[open], .nested-item[open], .meter-admin[open]'
-                )
-            ).map(function (element) {
-                return element.dataset.restoreId;
-            }).filter(Boolean);
+        const summary = meter.querySelector(':scope > summary');
 
-            sessionStorage.setItem(restoreKey, JSON.stringify({
-                meterId: meter.dataset.meterId,
-                formViewportTop: form.getBoundingClientRect().top,
-                scrollY: window.scrollY,
-                openDetails: openDetails
-            }));
-        });
-    });
+        const openDetails = Array.from(
+            document.querySelectorAll(
+                '.admin-item[open], .nested-item[open], .meter-admin[open]'
+            )
+        ).map(function (element) {
+            return element.dataset.restoreId;
+        }).filter(Boolean);
+
+        sessionStorage.setItem(restoreKey, JSON.stringify({
+            meterId: meter.dataset.meterId,
+            meterViewportTop: summary
+                ? summary.getBoundingClientRect().top
+                : 0,
+            scrollY: window.scrollY,
+            openDetails: openDetails
+        }));
+
+    }, true);
 });
 </script>
 {% endblock %}
