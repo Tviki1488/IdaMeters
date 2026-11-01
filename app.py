@@ -384,6 +384,32 @@ def history():
     centers = Center.query.order_by(Center.sort_order, Center.name).all()
     return render_template('history.html', readings=readings, centers=centers, period=period, center_id=center_id)
 
+@app.route('/history/<int:reading_id>/delete', methods=['POST'])
+@admin_required
+def delete_reading(reading_id):
+    reading = db.get_or_404(Reading, reading_id)
+
+    period = reading.period
+    center_id = reading.meter.category.center_id
+    details = (
+        f'{reading.meter.category.center.name} / '
+        f'{reading.meter.category.name} / {reading.meter.name}; '
+        f'period={period}; value={reading.value}; '
+        f'day_value={reading.day_value}; night_value={reading.night_value}'
+    )
+
+    log_action('reading_deleted', details)
+    db.session.delete(reading)
+    db.session.commit()
+
+    flash('Näidukirje kustutati jäädavalt.', 'success')
+    return redirect(url_for(
+        'history',
+        period=period,
+        center_id=center_id
+    ))
+
+
 @app.route('/history/<int:reading_id>/edit', methods=['POST'])
 @admin_required
 def edit_reading(reading_id):
