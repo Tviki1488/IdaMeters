@@ -669,18 +669,33 @@ def admin_reorder_meters(category_id):
     ):
         return jsonify({'success': False, 'message': 'Vigane mõõdikute järjestus.'}), 400
 
+    # Deleted meters are intentionally absent from the admin list.
+    # Accept the visible order and append any visible meters omitted by a stale page.
     visible_meters = [meter for meter in category.meters if meter.deleted_at is None]
-    current_ids = [meter.id for meter in visible_meters]
-    if len(meter_ids) != len(set(meter_ids)) or set(meter_ids) != set(current_ids):
-        return jsonify({'success': False, 'message': 'Mõõdikute nimekiri ei vasta kategooriale.'}), 400
-
     meters_by_id = {meter.id: meter for meter in visible_meters}
-    for position, meter_id in enumerate(meter_ids):
-        meters_by_id[meter_id].sort_order = position * 10
+
+    if len(meter_ids) != len(set(meter_ids)):
+        return jsonify({'success': False, 'message': 'Mõõdikute nimekirjas on korduvaid ID-sid.'}), 400
+
+    if any(meter_id not in meters_by_id for meter_id in meter_ids):
+        return jsonify({'success': False, 'message': 'Mõõdik ei kuulu sellesse kategooriasse või on kustutatud.'}), 400
+
+    ordered_ids = list(meter_ids)
+    ordered_ids.extend(
+        meter.id for meter in visible_meters
+        if meter.id not in set(ordered_ids)
+    )
+
+    for position, meter_id in enumerate(ordered_ids):
+        meters_by_id[meter_id].sort_order = (position + 1) * 10
 
     log_action('meters_reordered', f'{category.center.name} / {category.name}')
     db.session.commit()
-    return jsonify({'success': True})
+
+    return jsonify({
+        'success': True,
+        'saved_ids': ordered_ids
+    })
 
 
 @app.route('/admin/meter/<int:meter_id>/edit', methods=['POST'])
