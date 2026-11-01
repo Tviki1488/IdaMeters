@@ -753,10 +753,6 @@ def admin_delete_meter(meter_id):
     )
 
     return redirect(url_for('admin_home'))
-@admin_required
-def admin_archive_meter(meter_id):
-    m = db.get_or_404(Meter, meter_id); m.active = not m.active
-    log_action('meter_active_changed', f'{m.name}: active={m.active}'); db.session.commit(); flash('Mõõdiku olek muudetud.', 'success'); return redirect(url_for('admin_home'))
 
 @app.route('/admin/user', methods=['POST'])
 @admin_required
