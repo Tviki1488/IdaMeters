@@ -638,5 +638,97 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+<!-- Сохранение позиции после редактирования счётчика -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const restoreKey = 'forusAdminMeterEditRestore';
 
+    // Восстанавливаем открытые элементы и положение страницы
+    try {
+        const saved = sessionStorage.getItem(restoreKey);
+
+        if (saved) {
+            const state = JSON.parse(saved);
+            sessionStorage.removeItem(restoreKey);
+
+            (state.openDetails || []).forEach(function (id) {
+                const element = document.querySelector(
+                    '[data-restore-id="' + id + '"]'
+                );
+                if (element) element.open = true;
+            });
+
+            const meter = document.querySelector(
+                '.meter-admin[data-meter-id="' + state.meterId + '"]'
+            );
+
+            if (meter) {
+                meter.open = true;
+
+                const category = meter.closest('.nested-item');
+                if (category) {
+                    category.open = true;
+
+                    const center = category.closest('.admin-item');
+                    if (center) center.open = true;
+                }
+            }
+
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    const form = meter
+                        ? meter.querySelector('.compact-form')
+                        : null;
+
+                    if (form && Number.isFinite(state.formViewportTop)) {
+                        const newTop =
+                            window.scrollY +
+                            form.getBoundingClientRect().top -
+                            state.formViewportTop;
+
+                        window.scrollTo({
+                            top: Math.max(0, newTop),
+                            behavior: 'auto'
+                        });
+                    } else if (Number.isFinite(state.scrollY)) {
+                        window.scrollTo({
+                            top: state.scrollY,
+                            behavior: 'auto'
+                        });
+                    }
+                });
+            });
+        }
+    } catch (error) {
+        sessionStorage.removeItem(restoreKey);
+        console.error('Scroll restoration error:', error);
+    }
+
+    // Запоминаем положение перед сохранением счётчика
+    document.querySelectorAll(
+        '.meter-admin .compact-form'
+    ).forEach(function (form) {
+
+        form.addEventListener('submit', function () {
+            const meter = form.closest('.meter-admin');
+            if (!meter) return;
+
+            const openDetails = Array.from(
+                document.querySelectorAll(
+                    '.admin-item[open], .nested-item[open], .meter-admin[open]'
+                )
+            ).map(function (element) {
+                return element.dataset.restoreId;
+            }).filter(Boolean);
+
+            sessionStorage.setItem(restoreKey, JSON.stringify({
+                meterId: meter.dataset.meterId,
+                formViewportTop: form.getBoundingClientRect().top,
+                scrollY: window.scrollY,
+                openDetails: openDetails
+            }));
+        });
+    });
+});
+</script>
 {% endblock %}
