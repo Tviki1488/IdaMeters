@@ -2,7 +2,7 @@ import os, io, csv
 from datetime import datetime, date
 from functools import wraps
 from urllib.parse import urlparse
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file, abort
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file, abort, jsonify
 from flask_wtf.csrf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect, text
@@ -635,7 +635,11 @@ def admin_add_meter():
             resource_type=resource,
             unit=unit,
             tariff_mode=tariff_mode,
-            sort_order=request.form.get('sort_order', 0, type=int)
+            sort_order=request.form.get(
+                'sort_order',
+                max((meter.sort_order for meter in category.meters), default=-10) + 10,
+                type=int
+            )
         )
 
         db.session.add(m)
@@ -644,6 +648,32 @@ def admin_add_meter():
         flash('Mõõdik lisatud.', 'success')
 
     return redirect(url_for('admin_home'))
+
+
+@app.route('/admin/category/<int:category_id>/meters/reorder', methods=['POST'])
+@admin_required
+def admin_reorder_meters(category_id):
+    category = db.get_or_404(Category, category_id)
+    payload = request.get_json(silent=True) or {}
+    meter_ids = payload.get('meter_ids')
+
+    if not isinstance(meter_ids, list) or not all(
+        isinstance(meter_id, int) and not isinstance(meter_id, bool)
+        for meter_id in meter_ids
+    ):
+        return jsonify({'success': False, 'message': 'Vigane mõõdikute järjestus.'}), 400
+
+    current_ids = [meter.id for meter in category.meters]
+    if len(meter_ids) != len(set(meter_ids)) or set(meter_ids) != set(current_ids):
+        return jsonify({'success': False, 'message': 'Mõõdikute nimekiri ei vasta kategooriale.'}), 400
+
+    meters_by_id = {meter.id: meter for meter in category.meters}
+    for position, meter_id in enumerate(meter_ids):
+        meters_by_id[meter_id].sort_order = position * 10
+
+    log_action('meters_reordered', f'{category.center.name} / {category.name}')
+    db.session.commit()
+    return jsonify({'success': True})
 
 
 @app.route('/admin/meter/<int:meter_id>/edit', methods=['POST'])
