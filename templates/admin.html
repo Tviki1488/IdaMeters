@@ -107,9 +107,12 @@
                                     <details class="meter-admin" data-meter-id="{{ m.id }}" data-restore-id="meter-{{ m.id }}">
 
                                         <summary>
-                                            <span class="meter-drag-handle" draggable="true" title="Lohista mõõdiku järjestamiseks" aria-label="Lohista mõõdiku järjestamiseks">⠿</span>
-                                            <span class="status-dot {% if not m.active %}inactive{% endif %}"></span>
+                                            {% if m.deleted_at is none %}<span class="meter-drag-handle" draggable="true" title="Lohista mõõdiku järjestamiseks" aria-label="Lohista mõõdiku järjestamiseks">⠿</span>{% endif %}
+                                            <span class="status-dot {% if m.deleted_at is not none %}inactive{% elif not m.active %}inactive{% endif %}"></span>
                                             <span>{{ m.name }}</span>
+                                            <small class="meter-state-label">
+                                                {% if m.deleted_at is not none %}Kustutatud{% elif m.active %}Aktiivne{% else %}Mitteaktiivne{% endif %}
+                                            </small>
                                             <small>
                                                 {{ m.resource_type }} · {{ m.unit }}
                                                 {% if m.tariff_mode|default('single') == 'dual' %}
@@ -120,6 +123,7 @@
 
                                         <div class="nested-body">
 
+                                            {% if m.deleted_at is none %}
                                             <form method="post"
                                                   action="{{ url_for('admin_edit_meter', meter_id=m.id) }}"
                                                   class="stack-form compact-form">
@@ -183,8 +187,12 @@
                                                 </button>
 
                                             </form>
+                                            {% else %}
+                                            <p class="muted">See mõõdik on kustutatud. Andmeid ei saa enam muuta; ajaloolised näidud on säilitatud.</p>
+                                            {% endif %}
 
-                                           <div class="meter-admin-actions">
+                                            {% if m.deleted_at is none %}
+                                            <div class="meter-admin-actions">
 
     <form method="post"
           action="{{ url_for('admin_archive_meter', meter_id=m.id) }}">
@@ -197,14 +205,14 @@
 
     <form method="post"
           action="{{ url_for('admin_delete_meter', meter_id=m.id) }}"
-          onsubmit="return confirm('Kas oled kindel, et soovid selle mõõdiku jäädavalt kustutada? Kõik mõõdiku näidud kustutatakse samuti. Seda tegevust ei saa tagasi võtta.');">
+          onsubmit="return confirm('Kas oled kindel, et soovid selle mõõdiku eemaldada aktiivsest arvestusest? Mõõdik peidetakse aktiivsest loendist, kuid kõik ajaloolised näidud säilivad.');">
 
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <button type="submit"
                 class="meter-delete-button"
-                title="Kustuta mõõdik jäädavalt"
-                aria-label="Kustuta mõõdik jäädavalt">
+                title="Eemalda mõõdik aktiivsest arvestusest"
+                aria-label="Eemalda mõõdik aktiivsest arvestusest">
 
             <svg viewBox="0 0 24 24"
                  width="17"
@@ -224,6 +232,7 @@
     </form>
 
 </div>
+                                            {% endif %}
 
                                         </div>
 
