@@ -563,3 +563,43 @@
         overflow-wrap: anywhere;
     }
 }
+/* Fix: prevent dual-tariff details from overlapping history columns */
+
+.history-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+}
+
+.history-detail-panel {
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.history-tariff-details {
+    display: block;
+    max-width: 100%;
+}
+
+.history-tariff-details[open] {
+    width: 100%;
+    max-width: 100%;
+}
+
+@media (max-width: 700px) {
+    .history-table td[data-label="Mõõdik"] {
+        display: block;
+        text-align: left;
+    }
+
+    .history-table td[data-label="Mõõdik"] > * {
+        max-width: 100%;
+    }
+
+    .history-tariff-details[open] .history-detail-grid {
+        width: 100%;
+    }
+}
