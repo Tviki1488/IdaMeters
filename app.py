@@ -794,7 +794,10 @@ with app.app_context():
     inspector = inspect(db.engine)
 
     meter_columns = [column['name'] for column in inspector.get_columns('meter')]
-
+if 'deleted_at' not in meter_columns:
+    db.session.execute(text(
+        "ALTER TABLE meter ADD COLUMN deleted_at DATETIME"
+    ))
     if 'tariff_mode' not in meter_columns:
         db.session.execute(text(
             "ALTER TABLE meter ADD COLUMN tariff_mode VARCHAR(10) NOT NULL DEFAULT 'single'"
