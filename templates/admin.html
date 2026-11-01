@@ -555,15 +555,29 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Native HTML drag-and-drop is enabled only with a mouse-like desktop pointer.
+    // Desktop drag-and-drop. Persist the final DOM order and restore it if the server rejects it.
     const desktopDragEnabled = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     if (desktopDragEnabled) {
         document.querySelectorAll('.meter-admin-list').forEach(function (list) {
             let draggedMeter = null;
             let originalOrder = [];
+            let saveInProgress = false;
+            let saveQueued = false;
 
             function meterCards() {
                 return Array.from(list.querySelectorAll(':scope > .meter-admin'));
+            }
+
+            function getOrder() {
+                return meterCards().map(function (card) {
+                    return Number(card.dataset.meterId);
+                });
+            }
+
+            function sameOrder(a, b) {
+                return a.length === b.length && a.every(function (id, index) {
+                    return id === b[index];
+                });
             }
 
             function clearDropMarkers() {
@@ -572,64 +586,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             }
 
-            list.addEventListener('dragstart', function (event) {
-                const handle = event.target.closest('.meter-drag-handle');
-                if (!handle) {
-                    event.preventDefault();
+            async function saveOrder() {
+                if (saveInProgress) {
+                    saveQueued = true;
                     return;
                 }
-                draggedMeter = handle.closest('.meter-admin');
-                if (!draggedMeter) {
-                    event.preventDefault();
+
+                const orderedIds = getOrder();
+                if (!originalOrder.length || sameOrder(orderedIds, originalOrder)) {
                     return;
                 }
-                originalOrder = meterCards().slice();
-                event.dataTransfer.effectAllowed = 'move';
-                event.dataTransfer.setData('text/plain', draggedMeter.dataset.meterId);
-                draggedMeter.classList.add('is-dragging');
-            });
 
-            list.addEventListener('dragover', function (event) {
-                if (!draggedMeter) return;
-                const target = event.target.closest('.meter-admin');
-                if (!target || target === draggedMeter || !list.contains(target)) return;
-                event.preventDefault();
-                clearDropMarkers();
-                const rect = target.getBoundingClientRect();
-                const insertAfter = event.clientY > rect.top + rect.height / 2;
-                target.classList.add(insertAfter ? 'drag-over-after' : 'drag-over-before');
-                list.insertBefore(draggedMeter, insertAfter ? target.nextElementSibling : target);
-            });
-
-            let dropOccurred = false;
-
-            list.addEventListener('drop', function (event) {
-                if (!draggedMeter) return;
-                event.preventDefault();
-                clearDropMarkers();
-                dropOccurred = true;
-            });
-
-            // Save after dragend: at this point the browser has completed
-            // the DOM move, so the final order is read reliably.
-            list.addEventListener('dragend', async function () {
-                const finishedMeter = draggedMeter;
-                const previousOrder = originalOrder.slice();
-                const shouldSave = Boolean(finishedMeter && dropOccurred);
-                const orderedIds = shouldSave ? meterCards().map(function (card) {
-                    return Number(card.dataset.meterId);
-                }) : [];
+                saveInProgress = true;
                 const csrfToken = list.closest('.nested-body')?.querySelector('input[name="csrf_token"]')?.value
                     || document.querySelector('input[name="csrf_token"]')?.value;
                 const categoryId = list.dataset.categoryId;
-
-                finishedMeter?.classList.remove('is-dragging');
-                draggedMeter = null;
-                originalOrder = [];
-                dropOccurred = false;
-                clearDropMarkers();
-
-                if (!shouldSave) return;
 
                 try {
                     const response = await fetch('/admin/category/' + categoryId + '/meters/reorder', {
@@ -642,14 +613,79 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         body: JSON.stringify({ meter_ids: orderedIds })
                     });
-                    const result = await response.json();
+
+                    const result = await response.json().catch(function () {
+                        return { success: false, message: 'Server tagastas vigase vastuse.' };
+                    });
+
                     if (!response.ok || !result.success) {
                         throw new Error(result.message || 'Järjestuse salvestamine ebaõnnestus.');
                     }
+
+                    originalOrder = orderedIds.slice();
                 } catch (error) {
-                    previousOrder.forEach(function (card) { list.appendChild(card); });
-                    window.alert(error.message || 'Mõõdikute järjestust ei saanud salvestada.');
+                    originalOrder.forEach(function (id) {
+                        const card = list.querySelector('.meter-admin[data-meter-id="' + id + '"]');
+                        if (card) list.appendChild(card);
+                    });
+                    window.alert('Mõõdikute järjestust ei salvestatud: ' +
+                        (error.message || 'Tundmatu viga.'));
+                } finally {
+                    saveInProgress = false;
+                    if (saveQueued) {
+                        saveQueued = false;
+                        requestAnimationFrame(saveOrder);
+                    }
                 }
+            }
+
+            list.addEventListener('dragstart', function (event) {
+                const handle = event.target.closest('.meter-drag-handle');
+                if (!handle) {
+                    event.preventDefault();
+                    return;
+                }
+
+                draggedMeter = handle.closest('.meter-admin');
+                if (!draggedMeter) {
+                    event.preventDefault();
+                    return;
+                }
+
+                originalOrder = getOrder();
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', draggedMeter.dataset.meterId);
+                draggedMeter.classList.add('is-dragging');
+            });
+
+            list.addEventListener('dragover', function (event) {
+                if (!draggedMeter) return;
+                const target = event.target.closest('.meter-admin');
+                if (!target || target === draggedMeter || !list.contains(target)) return;
+
+                event.preventDefault();
+                clearDropMarkers();
+
+                const rect = target.getBoundingClientRect();
+                const insertAfter = event.clientY > rect.top + rect.height / 2;
+                target.classList.add(insertAfter ? 'drag-over-after' : 'drag-over-before');
+                list.insertBefore(draggedMeter, insertAfter ? target.nextElementSibling : target);
+            });
+
+            list.addEventListener('drop', function (event) {
+                if (!draggedMeter) return;
+                event.preventDefault();
+                clearDropMarkers();
+                // Let the browser finish the native drag operation before reading the final order.
+                requestAnimationFrame(saveOrder);
+            });
+
+            list.addEventListener('dragend', function () {
+                if (draggedMeter) draggedMeter.classList.remove('is-dragging');
+                draggedMeter = null;
+                clearDropMarkers();
+                // Fallback in case the browser does not dispatch a bubbling drop event.
+                requestAnimationFrame(saveOrder);
             });
 
             list.querySelectorAll('.meter-drag-handle').forEach(function (handle) {
