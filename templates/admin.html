@@ -39,33 +39,56 @@
             <details class="admin-item" data-restore-id="center-{{ c.id }}">
 
                 <summary>
-                    <span class="status-dot {% if not c.active %}inactive{% endif %}"></span>
+                    <span class="status-dot {% if not c.active or c.deleted_at is not none %}inactive{% endif %}"></span>
                     <span class="admin-item-name">{{ c.name }}</span>
-                    <span class="muted">{{ c.categories|length }} kateg.</span>
+                    {% if c.deleted_at is not none %}
+                        <span class="muted">Kustutatud</span>
+                    {% else %}
+                        <span class="muted">{{ c.categories|length }} kateg.</span>
+                    {% endif %}
                     <span class="chevron">⌄</span>
                 </summary>
 
                 <div class="admin-item-body">
 
-                    <form method="post"
-                          action="{{ url_for('admin_edit_center', center_id=c.id) }}"
-                          class="inline-create">
+                    {% if c.deleted_at is not none %}
+                        <p class="muted small-note">Objekt on aktiivsest arvestusest eemaldatud. Ajaloolised näidud on säilitatud.</p>
+                    {% else %}
+                        <form method="post"
+                              action="{{ url_for('admin_edit_center', center_id=c.id) }}"
+                              class="inline-create">
 
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input name="name" value="{{ c.name }}" required>
-                        <input name="sort_order" type="number" value="{{ c.sort_order }}" aria-label="Järjekord">
-                        <button class="button button-secondary" type="submit">Salvesta</button>
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input name="name" value="{{ c.name }}" required>
+                            <input name="sort_order" type="number" value="{{ c.sort_order }}" aria-label="Järjekord">
+                            <button class="button button-secondary" type="submit">Salvesta</button>
 
-                    </form>
+                        </form>
 
-                    <form method="post" action="{{ url_for('admin_archive_center', center_id=c.id) }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button class="button button-quiet button-small" type="submit">
-                            {% if c.active %}Arhiveeri objekt{% else %}Aktiveeri objekt{% endif %}
-                        </button>
-                    </form>
+                        <div class="center-admin-actions">
+                            <form method="post" action="{{ url_for('admin_archive_center', center_id=c.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button class="button button-quiet button-small" type="submit">
+                                    {% if c.active %}Arhiveeri objekt{% else %}Aktiveeri objekt{% endif %}
+                                </button>
+                            </form>
 
-                    <div class="nested-admin">
+                            <form method="post"
+                                  action="{{ url_for('admin_delete_center', center_id=c.id) }}"
+                                  onsubmit="return confirm('Kas oled kindel, et soovid selle objekti eemaldada aktiivsest arvestusest? Objekt peidetakse aktiivsest loendist, kuid kõik ajaloolised näidud säilivad.');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="center-delete-button" title="Eemalda objekt aktiivsest arvestusest" aria-label="Eemalda objekt aktiivsest arvestusest">
+                                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M3 6h18"/>
+                                        <path d="M8 6V4h8v2"/>
+                                        <path d="M19 6l-1 14H6L5 6"/>
+                                        <path d="M10 11v5M14 11v5"/>
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="nested-admin">
 
                         <h3>Kategooriad ja mõõdikud</h3>
 
@@ -337,7 +360,8 @@
 
                         </form>
 
-                    </div>
+                        </div>
+                    {% endif %}
 
                 </div>
 
@@ -555,29 +579,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Desktop drag-and-drop. Persist the final DOM order and restore it if the server rejects it.
+    // Native HTML drag-and-drop is enabled only with a mouse-like desktop pointer.
     const desktopDragEnabled = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     if (desktopDragEnabled) {
         document.querySelectorAll('.meter-admin-list').forEach(function (list) {
             let draggedMeter = null;
             let originalOrder = [];
-            let saveInProgress = false;
-            let saveQueued = false;
 
             function meterCards() {
                 return Array.from(list.querySelectorAll(':scope > .meter-admin'));
-            }
-
-            function getOrder() {
-                return meterCards().map(function (card) {
-                    return Number(card.dataset.meterId);
-                });
-            }
-
-            function sameOrder(a, b) {
-                return a.length === b.length && a.every(function (id, index) {
-                    return id === b[index];
-                });
             }
 
             function clearDropMarkers() {
@@ -586,21 +596,64 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             }
 
-            async function saveOrder() {
-                if (saveInProgress) {
-                    saveQueued = true;
+            list.addEventListener('dragstart', function (event) {
+                const handle = event.target.closest('.meter-drag-handle');
+                if (!handle) {
+                    event.preventDefault();
                     return;
                 }
-
-                const orderedIds = getOrder();
-                if (!originalOrder.length || sameOrder(orderedIds, originalOrder)) {
+                draggedMeter = handle.closest('.meter-admin');
+                if (!draggedMeter) {
+                    event.preventDefault();
                     return;
                 }
+                originalOrder = meterCards().slice();
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', draggedMeter.dataset.meterId);
+                draggedMeter.classList.add('is-dragging');
+            });
 
-                saveInProgress = true;
+            list.addEventListener('dragover', function (event) {
+                if (!draggedMeter) return;
+                const target = event.target.closest('.meter-admin');
+                if (!target || target === draggedMeter || !list.contains(target)) return;
+                event.preventDefault();
+                clearDropMarkers();
+                const rect = target.getBoundingClientRect();
+                const insertAfter = event.clientY > rect.top + rect.height / 2;
+                target.classList.add(insertAfter ? 'drag-over-after' : 'drag-over-before');
+                list.insertBefore(draggedMeter, insertAfter ? target.nextElementSibling : target);
+            });
+
+            let dropOccurred = false;
+
+            list.addEventListener('drop', function (event) {
+                if (!draggedMeter) return;
+                event.preventDefault();
+                clearDropMarkers();
+                dropOccurred = true;
+            });
+
+            // Save after dragend: at this point the browser has completed
+            // the DOM move, so the final order is read reliably.
+            list.addEventListener('dragend', async function () {
+                const finishedMeter = draggedMeter;
+                const previousOrder = originalOrder.slice();
+                const shouldSave = Boolean(finishedMeter && dropOccurred);
+                const orderedIds = shouldSave ? meterCards().map(function (card) {
+                    return Number(card.dataset.meterId);
+                }) : [];
                 const csrfToken = list.closest('.nested-body')?.querySelector('input[name="csrf_token"]')?.value
                     || document.querySelector('input[name="csrf_token"]')?.value;
                 const categoryId = list.dataset.categoryId;
+
+                finishedMeter?.classList.remove('is-dragging');
+                draggedMeter = null;
+                originalOrder = [];
+                dropOccurred = false;
+                clearDropMarkers();
+
+                if (!shouldSave) return;
 
                 try {
                     const response = await fetch('/admin/category/' + categoryId + '/meters/reorder', {
@@ -613,79 +666,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         body: JSON.stringify({ meter_ids: orderedIds })
                     });
-
-                    const result = await response.json().catch(function () {
-                        return { success: false, message: 'Server tagastas vigase vastuse.' };
-                    });
-
+                    const result = await response.json();
                     if (!response.ok || !result.success) {
                         throw new Error(result.message || 'Järjestuse salvestamine ebaõnnestus.');
                     }
-
-                    originalOrder = orderedIds.slice();
                 } catch (error) {
-                    originalOrder.forEach(function (id) {
-                        const card = list.querySelector('.meter-admin[data-meter-id="' + id + '"]');
-                        if (card) list.appendChild(card);
-                    });
-                    window.alert('Mõõdikute järjestust ei salvestatud: ' +
-                        (error.message || 'Tundmatu viga.'));
-                } finally {
-                    saveInProgress = false;
-                    if (saveQueued) {
-                        saveQueued = false;
-                        requestAnimationFrame(saveOrder);
-                    }
+                    previousOrder.forEach(function (card) { list.appendChild(card); });
+                    window.alert(error.message || 'Mõõdikute järjestust ei saanud salvestada.');
                 }
-            }
-
-            list.addEventListener('dragstart', function (event) {
-                const handle = event.target.closest('.meter-drag-handle');
-                if (!handle) {
-                    event.preventDefault();
-                    return;
-                }
-
-                draggedMeter = handle.closest('.meter-admin');
-                if (!draggedMeter) {
-                    event.preventDefault();
-                    return;
-                }
-
-                originalOrder = getOrder();
-                event.dataTransfer.effectAllowed = 'move';
-                event.dataTransfer.setData('text/plain', draggedMeter.dataset.meterId);
-                draggedMeter.classList.add('is-dragging');
-            });
-
-            list.addEventListener('dragover', function (event) {
-                if (!draggedMeter) return;
-                const target = event.target.closest('.meter-admin');
-                if (!target || target === draggedMeter || !list.contains(target)) return;
-
-                event.preventDefault();
-                clearDropMarkers();
-
-                const rect = target.getBoundingClientRect();
-                const insertAfter = event.clientY > rect.top + rect.height / 2;
-                target.classList.add(insertAfter ? 'drag-over-after' : 'drag-over-before');
-                list.insertBefore(draggedMeter, insertAfter ? target.nextElementSibling : target);
-            });
-
-            list.addEventListener('drop', function (event) {
-                if (!draggedMeter) return;
-                event.preventDefault();
-                clearDropMarkers();
-                // Let the browser finish the native drag operation before reading the final order.
-                requestAnimationFrame(saveOrder);
-            });
-
-            list.addEventListener('dragend', function () {
-                if (draggedMeter) draggedMeter.classList.remove('is-dragging');
-                draggedMeter = null;
-                clearDropMarkers();
-                // Fallback in case the browser does not dispatch a bubbling drop event.
-                requestAnimationFrame(saveOrder);
             });
 
             list.querySelectorAll('.meter-drag-handle').forEach(function (handle) {
