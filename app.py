@@ -41,6 +41,7 @@ class Center(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(160), nullable=False)
     active = db.Column(db.Boolean, nullable=False, default=True)
+    deleted_at = db.Column(db.DateTime, nullable=True)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     categories = db.relationship('Category', backref='center', cascade='all, delete-orphan', order_by='Category.sort_order')
 
@@ -62,11 +63,6 @@ class Meter(db.Model):
     tariff_mode = db.Column(db.String(10), nullable=False, default='single')
     active = db.Column(db.Boolean, nullable=False, default=True)
     deleted_at = db.Column(db.DateTime, nullable=True)
-    class Center(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(160), nullable=False)
-    active = db.Column(db.Boolean, nullable=False, default=True)
-    sort_order = db.Column(db.Integer, nullable=False, default=0)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     readings = db.relationship('Reading', backref='meter', cascade='all, delete-orphan')
 
@@ -144,7 +140,7 @@ def index():
     if not current_user(): return redirect(url_for('login'))
     period = request.args.get('period', date.today().strftime('%Y-%m'))
     if not valid_period(period): period = date.today().strftime('%Y-%m')
-    centers = Center.query.filter_by(active=True).order_by(Center.sort_order, Center.name).all()
+    centers = Center.query.filter_by(active=True, deleted_at=None).order_by(Center.sort_order, Center.name).all()
     stats = {}
     for c in centers:
         meters = [
@@ -179,6 +175,8 @@ def logout():
 @login_required
 def center_view(center_id):
     center = db.get_or_404(Center, center_id)
+    if center.deleted_at is not None or not center.active:
+        abort(404)
     period = request.args.get('period', date.today().strftime('%Y-%m'))
     if not valid_period(period): period = date.today().strftime('%Y-%m')
     categories = [c for c in center.categories if c.active]
@@ -198,6 +196,10 @@ def center_view(center_id):
 @login_required
 def category_readings(category_id):
     category = db.get_or_404(Category, category_id)
+    if category.center.deleted_at is not None or not category.center.active:
+        abort(404)
+    if not category.active:
+        abort(404)
     period = request.values.get('period', date.today().strftime('%Y-%m'))
 
     if not valid_period(period):
@@ -604,7 +606,11 @@ def admin_add_center():
 @app.route('/admin/center/<int:center_id>/edit', methods=['POST'])
 @admin_required
 def admin_edit_center(center_id):
-    c = db.get_or_404(Center, center_id); name = request.form.get('name','').strip()
+    c = db.get_or_404(Center, center_id)
+    if c.deleted_at is not None:
+        flash('Kustutatud objekti ei saa muuta.', 'warning')
+        return redirect(url_for('admin_home'))
+    name = request.form.get('name','').strip()
     if name: c.name = name
     c.sort_order = request.form.get('sort_order', c.sort_order, type=int)
     log_action('center_updated', c.name); db.session.commit(); flash('Muudatused salvestatud.', 'success')
@@ -613,9 +619,41 @@ def admin_edit_center(center_id):
 @app.route('/admin/center/<int:center_id>/archive', methods=['POST'])
 @admin_required
 def admin_archive_center(center_id):
-    c = db.get_or_404(Center, center_id); c.active = not c.active
-    log_action('center_active_changed', f'{c.name}: active={c.active}'); db.session.commit()
-    flash('Keskuse olek muudetud.', 'success'); return redirect(url_for('admin_home'))
+    c = db.get_or_404(Center, center_id)
+    if c.deleted_at is not None:
+        flash('Kustutatud objekti olekut ei saa muuta.', 'warning')
+        return redirect(url_for('admin_home'))
+    c.active = not c.active
+    log_action('center_active_changed', f'{c.name}: active={c.active}')
+    db.session.commit()
+    flash('Keskuse olek muudetud.', 'success')
+    return redirect(url_for('admin_home'))
+
+
+@app.route('/admin/center/<int:center_id>/delete', methods=['POST'])
+@admin_required
+def admin_delete_center(center_id):
+    c = db.get_or_404(Center, center_id)
+
+    if c.deleted_at is not None:
+        flash('Objekt on juba kustutatud.', 'info')
+        return redirect(url_for('admin_home'))
+
+    center_name = c.name
+    c.deleted_at = datetime.utcnow()
+    c.active = False
+
+    log_action(
+        'center_deleted',
+        f'{center_name}; historical readings preserved'
+    )
+
+    db.session.commit()
+    flash(
+        'Objekt eemaldati aktiivsest loendist. Kõik ajaloolised näidud säilitati.',
+        'success'
+    )
+    return redirect(url_for('admin_home'))
 
 @app.route('/admin/category', methods=['POST'])
 @admin_required
@@ -860,13 +898,14 @@ with app.app_context():
 
     inspector = inspect(db.engine)
 
-    meter_columns = [column['name'] for column in inspector.get_columns('meter')]
-        center_columns = [column['name'] for column in inspector.get_columns('center')]
+    center_columns = [column['name'] for column in inspector.get_columns('center')]
 
     if 'deleted_at' not in center_columns:
         db.session.execute(text(
             "ALTER TABLE center ADD COLUMN deleted_at TIMESTAMP"
         ))
+
+    meter_columns = [column['name'] for column in inspector.get_columns('meter')]
 
     if 'deleted_at' not in meter_columns:
         db.session.execute(text(
