@@ -861,6 +861,12 @@ with app.app_context():
     inspector = inspect(db.engine)
 
     meter_columns = [column['name'] for column in inspector.get_columns('meter')]
+        center_columns = [column['name'] for column in inspector.get_columns('center')]
+
+    if 'deleted_at' not in center_columns:
+        db.session.execute(text(
+            "ALTER TABLE center ADD COLUMN deleted_at TIMESTAMP"
+        ))
 
     if 'deleted_at' not in meter_columns:
         db.session.execute(text(
