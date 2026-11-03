@@ -62,6 +62,11 @@ class Meter(db.Model):
     tariff_mode = db.Column(db.String(10), nullable=False, default='single')
     active = db.Column(db.Boolean, nullable=False, default=True)
     deleted_at = db.Column(db.DateTime, nullable=True)
+    class Center(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(160), nullable=False)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     readings = db.relationship('Reading', backref='meter', cascade='all, delete-orphan')
 
