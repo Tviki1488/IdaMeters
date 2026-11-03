@@ -1052,3 +1052,40 @@
 .meter-admin > summary .meter-drag-handle {
     flex: 0 0 24px;
 }
+/* Минималистичная кнопка удаления торгового центра */
+.center-admin-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.center-admin-actions form {
+    margin: 0;
+}
+
+.center-delete-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: #84939c;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s;
+}
+
+.center-delete-button:hover {
+    background: #fff3f2;
+    border-color: #f0d8d6;
+    color: var(--red);
+}
+
+.center-delete-button:focus-visible {
+    outline: 2px solid var(--navy2);
+    outline-offset: 2px;
+}
