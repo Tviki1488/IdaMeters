@@ -78,82 +78,6 @@
 
                     {% if r.meter.tariff_mode == 'dual' %}
                     <span class="tariff-badge table-badge">2 tariifi</span>
-
-                    <details class="history-tariff-details">
-                        <summary>Näita päev / öö</summary>
-
-                        <div class="history-detail-grid">
-                            <div class="history-detail-panel history-day">
-                                <div class="history-detail-heading">
-                                    <span>☀</span>
-                                    <strong>Päev</strong>
-                                </div>
-
-                                <div class="history-detail-row">
-                                    <span>Eelmine</span>
-                                    <strong>
-                                        {{ p.value.day_value|num
-                                           if p.value and p.value.day_value is not none
-                                           else '—' }}
-                                    </strong>
-                                </div>
-
-                                <div class="history-detail-row">
-                                    <span>Praegune</span>
-                                    <strong>
-                                        {{ r.day_value|num
-                                           if r.day_value is not none else '—' }}
-                                    </strong>
-                                </div>
-
-                                <div class="history-detail-consumption day-consumption">
-                                    Tarbitud:
-                                    <strong>
-                                        {{ (r.day_value - p.value.day_value)|num
-                                           if p.value
-                                           and p.value.day_value is not none
-                                           and r.day_value is not none
-                                           else '—' }}
-                                    </strong>
-                                </div>
-                            </div>
-
-                            <div class="history-detail-panel history-night">
-                                <div class="history-detail-heading">
-                                    <span>☾</span>
-                                    <strong>Öö</strong>
-                                </div>
-
-                                <div class="history-detail-row">
-                                    <span>Eelmine</span>
-                                    <strong>
-                                        {{ p.value.night_value|num
-                                           if p.value and p.value.night_value is not none
-                                           else '—' }}
-                                    </strong>
-                                </div>
-
-                                <div class="history-detail-row">
-                                    <span>Praegune</span>
-                                    <strong>
-                                        {{ r.night_value|num
-                                           if r.night_value is not none else '—' }}
-                                    </strong>
-                                </div>
-
-                                <div class="history-detail-consumption night-consumption">
-                                    Tarbitud:
-                                    <strong>
-                                        {{ (r.night_value - p.value.night_value)|num
-                                           if p.value
-                                           and p.value.night_value is not none
-                                           and r.night_value is not none
-                                           else '—' }}
-                                    </strong>
-                                </div>
-                            </div>
-                        </div>
-                    </details>
                     {% endif %}
                 </td>
 
@@ -180,71 +104,54 @@
 
                 {% if logged_in_user and logged_in_user.role == 'admin' %}
                 <td data-label="Tegevused">
-
-                    <details class="history-edit-details">
-                        <button
-                            type="button"
-                            class="button button-quiet button-small"
-                            onclick="this.nextElementSibling.showModal()">
+                    <div class="center-admin-actions history-admin-actions">
+                        <button type="button" class="button button-quiet button-small"
+                            onclick="document.getElementById('edit-reading-{{ r.id }}').showModal()">
                             Muuda
                         </button>
-
-                        <dialog class="history-edit-dialog">
-                            <div class="history-edit-header">
-                                <h2>Näidu muutmine</h2>
-
-                                <button
-                                    type="button"
-                                    class="history-dialog-close"
-                                    onclick="this.closest('dialog').close()">
-                                    ×
-                                </button>
+                        <form method="POST" action="{{ url_for('delete_reading', reading_id=r.id) }}"
+                            onsubmit="return confirm('Kas oled kindel, et soovid selle näidu jäädavalt kustutada? Seda toimingut ei saa tagasi võtta.');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="center-delete-button" title="Kustuta näit" aria-label="Kustuta näit">
+                                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M3 6h18"/>
+                                    <path d="M8 6V4h8v2"/>
+                                    <path d="M19 6l-1 14H6L5 6"/>
+                                    <path d="M10 11v5M14 11v5"/>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                    <dialog id="edit-reading-{{ r.id }}" class="history-edit-dialog">
+                        <div class="history-edit-header">
+                            <h2>Näidu muutmine</h2>
+                            <button type="button" class="history-dialog-close" onclick="this.closest('dialog').close()">×</button>
+                        </div>
+                        <form method="POST" action="{{ url_for('edit_reading', reading_id=r.id) }}" class="history-edit-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {% if r.meter.tariff_mode == 'dual' %}
+                            <label>Päevanäit ({{ r.meter.unit }})
+                                <input type="number" name="day_value" step="any" min="0" value="{{ r.day_value if r.day_value is not none else '' }}" required>
+                            </label>
+                            <label>Öönäit ({{ r.meter.unit }})
+                                <input type="number" name="night_value" step="any" min="0" value="{{ r.night_value if r.night_value is not none else '' }}" required>
+                            </label>
+                            {% else %}
+                            <label>Näit ({{ r.meter.unit }})
+                                <input type="number" name="value" step="any" min="0" value="{{ r.value }}" required>
+                            </label>
+                            {% endif %}
+                            <label>Märkus
+                                <input type="text" name="note" maxlength="500" value="{{ r.note or '' }}">
+                            </label>
+                            <div class="history-edit-actions">
+                                <button type="button" class="button button-secondary" onclick="this.closest('dialog').close()">Tühista</button>
+                                <button class="button button-primary" type="submit">Salvesta</button>
                             </div>
-
-                            <form
-                                method="POST"
-                                action="{{ url_for('edit_reading', reading_id=r.id) }}"
-                                class="history-edit-form">
-
-                                <input
-                                    type="hidden"
-                                    name="csrf_token"
-                                    value="{{ csrf_token() }}">
-
-                                {% if r.meter.tariff_mode == 'dual' %}
-                                <label>
-                                    Päevanäit ({{ r.meter.unit }})
-                                    <input
-                                        type="number"
-                                        name="day_value"
-                                        step="any"
-                                        min="0"
-                                        value="{{ r.day_value if r.day_value is not none else '' }}"
-                                        required>
-                                </label>
-
-                                <label>
-                                    Öönäit ({{ r.meter.unit }})
-                                    <input
-                                        type="number"
-                                        name="night_value"
-                                        step="any"
-                                        min="0"
-                                        value="{{ r.night_value if r.night_value is not none else '' }}"
-                                        required>
-                                </label>
-                                {% else %}
-                                <label>
-                                    Näit ({{ r.meter.unit }})
-                                    <input
-                                        type="number"
-                                        name="value"
-                                        step="any"
-                                        min="0"
-                                        value="{{ r.value }}"
-                                        required>
-                                </label>
-                                {% endif %}
+                        </form>
+                    </dialog>
+                </td>
+                {% endif %}
 
                                 <label>
                                     Märkus
