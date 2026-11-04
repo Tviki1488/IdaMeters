@@ -1089,3 +1089,14 @@
     outline: 2px solid var(--navy2);
     outline-offset: 2px;
 }
+
+
+/* Forus Arvestid — ordering, meter info and compact audit log */
+.drag-handle,.meter-drag-handle{display:inline-flex;align-items:center;justify-content:center;flex:0 0 26px;width:26px;height:28px;color:#8295a1;cursor:grab;user-select:none;font-size:20px;border-radius:6px}
+.drag-handle:hover,.meter-drag-handle:hover{background:#edf3f7;color:var(--navy)}
+.is-dragging{opacity:.45}.admin-items>.admin-item,.category-sort-list>.nested-item{transition:opacity .15s}
+.meter-info-wrap{position:relative;display:inline-flex;vertical-align:middle;margin-left:6px}
+.meter-info-button{width:22px;height:22px;border:0;border-radius:50%;background:#edf3f7;color:#174a6e;font-weight:800;cursor:pointer}
+.meter-info-popover{position:absolute;z-index:30;left:0;top:27px;width:min(260px,70vw);padding:12px 14px;background:#fff;border:1px solid #d8e2eb;border-radius:10px;box-shadow:0 8px 24px #102c401f;white-space:normal;font-size:13px;line-height:1.45}
+.audit-disclosure>summary{list-style:none;cursor:pointer}.audit-disclosure>summary::-webkit-details-marker{display:none}.audit-summary{display:flex;justify-content:space-between;align-items:center}.audit-page-size{display:flex;justify-content:flex-end;margin:12px 0}.audit-page-size label{display:flex;align-items:center;gap:8px}.audit-pagination{display:flex;gap:7px;justify-content:center;align-items:center;margin:16px 0}.audit-pagination a,.audit-pagination span{min-width:34px;padding:7px 10px;text-align:center;border-radius:8px;text-decoration:none;background:#f1f5f8;color:#174a6e}.audit-pagination a.active{background:#174a6e;color:white}.history-compact-tariffs{display:flex;flex-direction:column;gap:4px}.history-compact-tariffs span,.history-compact-tariffs strong{white-space:nowrap}
+@media(max-width:600px){.drag-handle,.meter-drag-handle{width:22px;flex-basis:22px}.meter-info-popover{left:auto;right:0}.audit-summary h2{font-size:18px}}
