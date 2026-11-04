@@ -658,12 +658,26 @@ def admin_delete_center(center_id):
 @app.route('/admin/category', methods=['POST'])
 @admin_required
 def admin_add_category():
-    name = request.form.get('name','').strip(); center_id = request.form.get('center_id', type=int)
+    name = request.form.get('name', '').strip()
+    center_id = request.form.get('center_id', type=int)
     center = db.session.get(Center, center_id) if center_id else None
-    if not name or not center: flash('Vali kaubanduskeskus ja sisesta kategooria nimi.', 'error')
+
+    if not name:
+        flash('Sisesta kategooria nimi.', 'error')
+    elif not center:
+        flash('Vali kaubanduskeskus.', 'error')
+    elif center.deleted_at is not None:
+        flash('Kustutatud kaubanduskeskusele ei saa kategooriat lisada.', 'error')
     else:
-        db.session.add(Category(center_id=center.id, name=name, sort_order=request.form.get('sort_order', 0, type=int)))
-        log_action('category_created', f'{center.name} / {name}'); db.session.commit(); flash('Kategooria lisatud.', 'success')
+        db.session.add(Category(
+            center_id=center.id,
+            name=name,
+            sort_order=request.form.get('sort_order', 0, type=int)
+        ))
+        log_action('category_created', f'{center.name} / {name}')
+        db.session.commit()
+        flash('Kategooria lisatud.', 'success')
+
     return redirect(url_for('admin_home'))
 
 @app.route('/admin/category/<int:category_id>/edit', methods=['POST'])
