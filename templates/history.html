@@ -1,4 +1,3 @@
-
 {% extends 'base.html' %}
 {% block title %}Ajalugu · Forus Arvestid{% endblock %}
 
@@ -150,56 +149,6 @@
                             </div>
                         </form>
                     </dialog>
-                </td>
-                {% endif %}
-
-                                <label>
-                                    Märkus
-                                    <input
-                                        type="text"
-                                        name="note"
-                                        maxlength="500"
-                                        value="{{ r.note or '' }}">
-                                </label>
-
-                                <div class="history-edit-actions">
-                                    <button
-                                        type="button"
-                                        class="button button-secondary"
-                                        onclick="this.closest('dialog').close()">
-                                        Tühista
-                                    </button>
-
-                                    <button
-                                        class="button button-primary"
-                                        type="submit">
-                                        Salvesta
-                                    </button>
-                                </div>
-                            </form>
-                        </dialog>
-                    </details>
-
-                    <form
-                        method="POST"
-                        action="{{ url_for('delete_reading', reading_id=r.id) }}"
-                        onsubmit="return confirm('Kas oled kindel, et soovid selle näidukirje jäädavalt kustutada? Seda toimingut ei saa tagasi võtta.');"
-                        style="display:inline-block; margin-left:6px;">
-
-                        <input
-                            type="hidden"
-                            name="csrf_token"
-                            value="{{ csrf_token() }}">
-
-                        <button
-                            type="submit"
-                            class="button button-quiet button-small"
-                            title="Kustuta see näit jäädavalt"
-                            aria-label="Kustuta see näit jäädavalt">
-                            Kustuta
-                        </button>
-                    </form>
-
                 </td>
                 {% endif %}
             </tr>
