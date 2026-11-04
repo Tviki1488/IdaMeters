@@ -37,9 +37,8 @@
                 <th>Kategooria</th>
                 <th>Mõõdik</th>
                 <th>Ressurss</th>
-                <th>Eelmine kokku</th>
-                <th>Praegune kokku</th>
-                <th>Kokku tarbitud</th>
+                <th>Eelmine näit</th>
+                <th>Praegune näit</th>
                 <th>Sisestaja</th>
                 {% if logged_in_user and logged_in_user.role == 'admin' %}
                 <th>Tegevused</th>
@@ -162,17 +161,17 @@
                     {{ r.meter.resource_type }}
                 </td>
 
-                <td data-label="Eelmine kokku">
-                    {{ p.value.value|num if p.value else '—' }}
+                <td data-label="Eelmine näit">
+                    {% if r.meter.tariff_mode == 'dual' %}
+                        <div class="history-compact-tariffs"><span>☀ {{ p.value.day_value|num if p.value and p.value.day_value is not none else '—' }}</span><span>☾ {{ p.value.night_value|num if p.value and p.value.night_value is not none else '—' }}</span></div>
+                    {% else %}{{ p.value.value|num if p.value else '—' }}{% endif %}
                 </td>
 
-                <td data-label="Praegune kokku">
-                    <strong>{{ r.value|num }}</strong>
+                <td data-label="Praegune näit">
+                    {% if r.meter.tariff_mode == 'dual' %}
+                        <div class="history-compact-tariffs"><strong>☀ {{ r.day_value|num if r.day_value is not none else '—' }}</strong><strong>☾ {{ r.night_value|num if r.night_value is not none else '—' }}</strong></div>
+                    {% else %}<strong>{{ r.value|num }}</strong>{% endif %}
                     {{ r.meter.unit }}
-                </td>
-
-                <td data-label="Kokku tarbitud">
-                    {{ (r.value - p.value.value)|num if p.value else '—' }}
                 </td>
 
                 <td data-label="Sisestaja">
@@ -300,7 +299,7 @@
 
             {% else %}
             <tr>
-                <td colspan="{{ 9 if logged_in_user and logged_in_user.role == 'admin' else 8 }}">
+                <td colspan="{{ 8 if logged_in_user and logged_in_user.role == 'admin' else 7 }}">
                     Valitud filtritega näite ei leitud.
                 </td>
             </tr>
@@ -310,8 +309,7 @@
 </div>
 
 <p class="muted small-note">
-    Tarbimine arvutatakse võrreldes eelmise salvestatud kuu näiduga.
-    Kahetariifse arvesti päeva- ja öötarbimine arvutatakse eraldi.
+    Ajalugu kuvab eelmise ja valitud kuu näidu. Kahetariifsetel arvestitel kuvatakse päeva- ja öönäidud eraldi.
 </p>
 
 {% endblock %}
