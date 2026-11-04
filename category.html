@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}{{ category.name }} · Forus Arvestid{% endblock %}
+{% block content %}
+<a class="back-link" href="{{ url_for('center_view', center_id=category.center_id, period=period) }}">← {{ category.center.name }}</a>
+<div class="page-heading">
+    <div><p class="eyebrow">{{ category.center.name }} / KATEGOORIA</p><h1>{{ category.name }}</h1><p class="muted">Sisesta selle kategooria mõõdikute näidud. Tühjaks jäetud välju ei muudeta.</p></div>
+    <form class="period-form"><label for="period">Arvestuskuu</label><input id="period" type="month" name="period" value="{{ period }}"><button class="button button-secondary" type="submit">Ava kuu</button></form>
+</div>
+<form method="post" class="reading-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="reading-toolbar"><div><strong>{{ rows|length }} mõõdikut</strong><span class="muted"> · {{ period }}</span></div><button class="button button-primary" type="submit">Salvesta näidud</button></div>
+    {% if rows %}
+    <div class="meter-list">
+        {% for row in rows %}
+        <article class="meter-card">
+            <div class="meter-top">
+                <div class="meter-icon">{% if row.meter.resource_type == 'Elekter' %}ϟ{% elif 'vesi' in row.meter.resource_type|lower %}≈{% elif row.meter.resource_type == 'Gaas' %}♨{% else %}▤{% endif %}</div>
+                <div class="meter-name"><h2>{{ row.meter.name }}{% if row.meter.description %} <span class="meter-info-wrap"><button type="button" class="meter-info-button" aria-label="Lisainfo arvesti kohta" title="Lisainfo" onclick="event.preventDefault();event.stopPropagation();this.nextElementSibling.hidden=!this.nextElementSibling.hidden">i</button><span class="meter-info-popover" hidden>{{ row.meter.description }}</span></span>{% endif %}</h2><p class="muted">{{ row.meter.resource_type }}{% if row.meter.meter_code %} · {{ row.meter.meter_code }}{% endif %}</p></div>
+                {% if row.meter.tariff_mode == 'dual' %}<span class="tariff-badge">2 tariifi</span>{% endif %}
+                <span class="unit-chip">{{ row.meter.unit }}</span>
+            </div>
+            {% if row.meter.tariff_mode == 'dual' %}
+            <div class="dual-tariff-grid">
+                <div class="tariff-panel tariff-day"><div class="tariff-heading"><span>☀</span><strong>Päev</strong></div>
+                    <div class="previous-value"><span>Eelmine näit{% if row.previous and row.previous.day_value is not none %} · {{ row.previous.period }}{% endif %}</span><strong>{{ row.previous.day_value|num if row.previous and row.previous.day_value is not none else '—' }}</strong></div>
+                    <label class="current-value"><span>Uus päevanäit</span><div class="number-input-wrap"><input inputmode="decimal" type="text" name="day_value_{{ row.meter.id }}" value="{{ row.reading.day_value|num if row.reading and row.reading.day_value is not none else '' }}" placeholder="Sisesta päevanäit" aria-label="{{ row.meter.name }} päevanäit"><span>{{ row.meter.unit }}</span></div></label>
+                </div>
+                <div class="tariff-panel tariff-night"><div class="tariff-heading"><span>☾</span><strong>Öö</strong></div>
+                    <div class="previous-value"><span>Eelmine näit{% if row.previous and row.previous.night_value is not none %} · {{ row.previous.period }}{% endif %}</span><strong>{{ row.previous.night_value|num if row.previous and row.previous.night_value is not none else '—' }}</strong></div>
+                    <label class="current-value"><span>Uus öönäit</span><div class="number-input-wrap"><input inputmode="decimal" type="text" name="night_value_{{ row.meter.id }}" value="{{ row.reading.night_value|num if row.reading and row.reading.night_value is not none else '' }}" placeholder="Sisesta öönäit" aria-label="{{ row.meter.name }} öönäit"><span>{{ row.meter.unit }}</span></div></label>
+                </div>
+            </div>
+            {% else %}
+            <div class="meter-values"><div class="previous-value"><span>Eelmine näit{% if row.previous %} · {{ row.previous.period }}{% endif %}</span><strong>{{ row.previous.value|num if row.previous else '—' }}</strong></div>
+                <label class="current-value"><span>Uus näit</span><div class="number-input-wrap"><input inputmode="decimal" type="text" name="value_{{ row.meter.id }}" value="{{ row.reading.value|num if row.reading else '' }}" placeholder="Sisesta näit" aria-label="{{ row.meter.name }} uus näit"><span>{{ row.meter.unit }}</span></div></label>
+            </div>
+            {% endif %}
+            <label class="note-label">Märkus <span>(valikuline)</span><input name="note_{{ row.meter.id }}" value="{{ row.reading.note if row.reading and row.reading.note else '' }}" placeholder="Nt arvesti vahetatud või ligipääs puudus"></label>
+            {% if row.reading %}<p class="saved-hint">✓ Salvestatud · {{ row.reading.entered_at.strftime('%d.%m.%Y %H:%M') }}</p>{% endif %}
+        </article>
+        {% endfor %}
+    </div>
+    <div class="sticky-save"><span class="muted">Kontrolli väärtused enne salvestamist.</span><button class="button button-primary" type="submit">Salvesta näidud</button></div>
+    {% else %}
+    <section class="empty-state"><h2>Selles kategoorias pole aktiivseid mõõdikuid</h2><p>Administraator saab need lisada halduspaneelis.</p></section>
+    {% endif %}
+</form>
+{% endblock %}
