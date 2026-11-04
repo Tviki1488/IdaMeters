@@ -124,9 +124,18 @@
                                         {% if cat.active %}Arhiveeri kategooria{% else %}Aktiveeri kategooria{% endif %}
                                     </button>
                                 </form>
-                                <form method="post" action="{{ url_for('admin_delete_category', category_id=cat.id) }}" onsubmit="return confirm('Eemaldada kategooria aktiivsest arvestusest? Ajaloolised näidud säilivad.');">
+                                <form method="post"
+                                      action="{{ url_for('admin_delete_category', category_id=cat.id) }}"
+                                      onsubmit="return confirm('Eemaldada kategooria aktiivsest arvestusest? Ajaloolised näidud säilivad.');">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="meter-delete-button" title="Eemalda kategooria">Kustuta</button>
+                                    <button type="submit" class="center-delete-button" title="Eemalda kategooria aktiivsest arvestusest" aria-label="Eemalda kategooria aktiivsest arvestusest">
+                                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M3 6h18"/>
+                                            <path d="M8 6V4h8v2"/>
+                                            <path d="M19 6l-1 14H6L5 6"/>
+                                            <path d="M10 11v5M14 11v5"/>
+                                        </svg>
+                                    </button>
                                 </form>
 
                                 <div class="meter-admin-list" data-category-id="{{ cat.id }}">
