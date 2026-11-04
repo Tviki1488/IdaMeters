@@ -588,6 +588,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             list.addEventListener('dragstart', function (event) {
+                event.stopPropagation();
                 const handle = event.target.closest('.meter-drag-handle');
                 if (!handle) {
                     event.preventDefault();
@@ -605,6 +606,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             list.addEventListener('dragover', function (event) {
+                if (draggedMeter) event.stopPropagation();
                 if (!draggedMeter) return;
                 const target = event.target.closest('.meter-admin');
                 if (!target || target === draggedMeter || !list.contains(target)) return;
@@ -619,6 +621,7 @@ document.addEventListener('DOMContentLoaded', function () {
             let dropOccurred = false;
 
             list.addEventListener('drop', function (event) {
+                if (draggedMeter) event.stopPropagation();
                 if (!draggedMeter) return;
                 event.preventDefault();
                 clearDropMarkers();
@@ -627,7 +630,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Save after dragend: at this point the browser has completed
             // the DOM move, so the final order is read reliably.
-            list.addEventListener('dragend', async function () {
+            list.addEventListener('dragend', async function (event) {
+                event.stopPropagation();
                 const finishedMeter = draggedMeter;
                 const previousOrder = originalOrder.slice();
                 const shouldSave = Boolean(finishedMeter && dropOccurred);
@@ -682,6 +686,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let dragged = null, before = [];
         const items = () => Array.from(container.querySelectorAll(':scope > ' + itemSelector));
         container.addEventListener('dragstart', e => {
+            e.stopPropagation();
             if (!e.target.closest(handleSelector)) { e.preventDefault(); return; }
             dragged = e.target.closest(itemSelector); before = items().slice();
             if (!dragged) return;
@@ -689,14 +694,16 @@ document.addEventListener('DOMContentLoaded', function () {
             dragged.classList.add('is-dragging');
         });
         container.addEventListener('dragover', e => {
+            if (dragged) e.stopPropagation();
             if (!dragged) return;
             const target = e.target.closest(itemSelector);
             if (!target || target === dragged || !container.contains(target)) return;
             e.preventDefault(); const r=target.getBoundingClientRect();
             container.insertBefore(dragged, e.clientY > r.top+r.height/2 ? target.nextElementSibling : target);
         });
-        container.addEventListener('drop', e => { if (dragged) e.preventDefault(); });
-        container.addEventListener('dragend', async () => {
+        container.addEventListener('drop', e => { if (dragged) { e.stopPropagation(); e.preventDefault(); } });
+        container.addEventListener('dragend', async e => {
+            if (dragged) e.stopPropagation();
             if (!dragged) return;
             dragged.classList.remove('is-dragging');
             const ids=items().map(el=>Number(el.dataset.centerId || el.dataset.categoryId));
