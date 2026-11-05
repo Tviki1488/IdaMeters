@@ -26,9 +26,9 @@ pip install -r requirements.txt
 Set bootstrap credentials before first run. On Windows PowerShell:
 
 ```powershell
-$env:SECRET_KEY = "replace-with-a-long-random-secret"
+$env:SECRET_KEY = "paste-a-random-secret-of-at-least-32-characters"
 $env:BOOTSTRAP_ADMIN_USER = "admin"
-$env:BOOTSTRAP_ADMIN_PASSWORD = "use-a-unique-password-at-least-10-chars"
+$env:BOOTSTRAP_ADMIN_PASSWORD = "use-a-unique-password-at-least-14-chars"
 python app.py
 ```
 
@@ -41,12 +41,24 @@ Build using the included Dockerfile. Set environment variables in Coolify:
 - `BOOTSTRAP_ADMIN_USER`: desired first admin username.
 - `BOOTSTRAP_ADMIN_PASSWORD`: unique password (10+ chars); after first successful bootstrap, remove this variable.
 - `DATABASE_URL`: PostgreSQL connection URL for production, e.g. `postgresql://...` (use a persistent managed PostgreSQL service).
-- `COOKIE_SECURE=1` when served over HTTPS.
+- `APP_ENV=production`
+- `COOKIE_SECURE=1` when served over HTTPS (required in production).
+- `SECRET_KEY` must be a unique random value of at least 32 characters; the app refuses to start without it.
+- Use HTTPS at the reverse proxy, and configure that proxy to be the only trusted proxy in front of the app.
 
 Expose container port `5000`. **Configure a persistent PostgreSQL database before real use.** Do not rely on container-local SQLite for production because container rebuilds can lose data unless a persistent volume is configured.
 
-## Production readiness
-This is an initial working version, not a security-audited production release. CSRF protection is enabled for forms. Before using real company data, configure HTTPS and `COOKIE_SECURE=1`, use a persistent PostgreSQL database, configure and test backups/restores, rotate the secret key, and test the workflows with representative data. Validate the company's data-retention and access requirements. Shopping centres, categories and meters are archived/reactivated rather than physically deleted so historical readings remain intact.
+## Security hardening included
+- Startup fails if `SECRET_KEY` is missing or weak; production requires `COOKIE_SECURE=1`.
+- CSRF protection on state-changing requests, secure session-cookie settings, an eight-hour session lifetime, and security response headers.
+- Database-backed login throttling shared across application workers.
+- Admin-only controls remain enforced server-side; the dashboard now also requires an active login.
+- XLSX text cells are protected against spreadsheet formula injection.
+- Docker runs the application as a non-root user.
+- Passwords set through the admin interface must be at least 14 characters.
+
+## Production deployment checklist
+This code hardening does not replace an infrastructure penetration test. Before using real company data: use HTTPS and PostgreSQL; keep secrets only in the hosting platform's secret store; remove bootstrap credentials after the first admin is created; restrict database/network access; configure automated encrypted backups and test restoration; monitor logs and failed logins; keep the host OS, reverse proxy and dependencies patched; and verify access permissions with separate ordinary/admin accounts. Never publish `.env`, database files, backups or source-control secrets.
 
 ## Data model
 - `User`: account, password hash, role and active state.

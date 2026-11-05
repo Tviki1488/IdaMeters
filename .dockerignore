@@ -1,6 +1,14 @@
 __pycache__/
-*.pyc
+*.py[cod]
 *.db
+*.sqlite
+*.sqlite3
 .env
+.env.*
+!.env.example
 .venv/
+venv/
 .git/
+backups/
+*.sql
+*.dump

@@ -1,5 +1,5 @@
-import os, io, csv
-from datetime import datetime, date
+import os, io, csv, hmac, hashlib, math
+from datetime import datetime, date, timedelta
 from functools import wraps
 from urllib.parse import urlparse
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file, abort, jsonify
@@ -13,18 +13,64 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
 app = Flask(__name__)
-CSRFProtect(app)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'CHANGE-ME-before-deployment')
-database_url = os.environ.get('DATABASE_URL', 'sqlite:///metervault.db')
-if database_url.startswith('postgres://'):
-    database_url = database_url.replace('postgres://', 'postgresql://', 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+
+# Fail closed: never run with Flask's public/default signing key.
+secret_key = os.environ.get('SECRET_KEY', '')
+if (len(secret_key) < 32
+        or secret_key.lower().startswith(('change-me', 'changeme', 'replace-with-'))):
+    raise RuntimeError('SECRET_KEY must be a unique random value of at least 32 characters, not a placeholder.')
+
+app.config['SECRET_KEY'] = secret_key
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+is_production = os.environ.get('APP_ENV', '').lower() == 'production'
+cookie_secure = os.environ.get('COOKIE_SECURE', '1' if is_production else '0') == '1'
+if is_production and not cookie_secure:
+    raise RuntimeError('COOKIE_SECURE=1 is required in production.')
+
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = os.environ.get('COOKIE_SECURE', '0') == '1'
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+app.config['SESSION_COOKIE_NAME'] = '__Host-forus_arvestid' if cookie_secure else 'forus_arvestid'
+app.config['SESSION_COOKIE_PATH'] = '/'
+app.config['SESSION_COOKIE_DOMAIN'] = None
+app.config['SESSION_COOKIE_SECURE'] = cookie_secure
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)
+app.config['SESSION_REFRESH_EACH_REQUEST'] = True
+app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024
+app.config['WTF_CSRF_TIME_LIMIT'] = 60 * 60
+app.config['PREFERRED_URL_SCHEME'] = 'https'
+
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///metervault.db')
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql+psycopg://', 1)
+elif database_url.startswith('postgresql://'):
+    database_url = database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
+if is_production and not database_url.startswith('postgresql+psycopg://'):
+    raise RuntimeError('Production deployment requires PostgreSQL via the psycopg v3 driver.')
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+
+# Trust only one reverse proxy for client IP and HTTPS scheme.
+# X-Forwarded-Host is deliberately not trusted.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 db = SQLAlchemy(app)
+CSRFProtect(app)
+
+
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('X-Frame-Options', 'DENY')
+    response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.setdefault('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+    response.headers.setdefault(
+        'Content-Security-Policy',
+        "default-src 'self'; base-uri 'self'; form-action 'self'; "
+        "frame-ancestors 'none'; object-src 'none'; img-src 'self' data:; "
+        "style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'"
+    )
+    if request.is_secure:
+        response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    response.headers.setdefault('Cache-Control', 'no-store, private, max-age=0')
+    return response
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -32,6 +78,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='user')
     active = db.Column(db.Boolean, nullable=False, default=True)
+    session_version = db.Column(db.Integer, nullable=False, default=1)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     def set_password(self, password): self.password_hash = generate_password_hash(password)
@@ -91,9 +138,45 @@ class AuditLog(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     user = db.relationship('User')
 
+class LoginAttempt(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    ip_hash = db.Column(db.String(64), nullable=False, index=True)
+    username_hash = db.Column(db.String(64), nullable=False, index=True)
+    attempted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+
+
+def _login_fingerprint(value):
+    return hmac.new(
+        app.config['SECRET_KEY'].encode('utf-8'),
+        value.encode('utf-8', errors='ignore'),
+        hashlib.sha256
+    ).hexdigest()
+
+
+def _login_is_limited(ip_hash, username_hash, now):
+    cutoff = now - timedelta(minutes=15)
+    per_pair = LoginAttempt.query.filter(
+        LoginAttempt.ip_hash == ip_hash,
+        LoginAttempt.username_hash == username_hash,
+        LoginAttempt.attempted_at >= cutoff
+    ).count()
+    per_ip = LoginAttempt.query.filter(
+        LoginAttempt.ip_hash == ip_hash,
+        LoginAttempt.attempted_at >= cutoff
+    ).count()
+    return per_pair >= 8 or per_ip >= 30
+
+
 def current_user():
     uid = session.get('user_id')
-    return db.session.get(User, uid) if uid else None
+    if not uid:
+        return None
+    user = db.session.get(User, uid)
+    if (not user or not user.active
+            or session.get('session_version') != user.session_version):
+        session.clear()
+        return None
+    return user
 
 def login_required(fn):
     @wraps(fn)
@@ -139,6 +222,7 @@ def inject_globals():
     return {'logged_in_user': current_user(), 'current_year': date.today().year}
 
 @app.route('/')
+@login_required
 def index():
     if not current_user(): return redirect(url_for('login'))
     period = request.args.get('period', date.today().strftime('%Y-%m'))
@@ -156,18 +240,44 @@ def index():
         stats[c.id] = (done, len(meters))
     return render_template('index.html', centers=centers, stats=stats, period=period)
 
-@app.route('/login', methods=['GET','POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    if current_user(): return redirect(url_for('index'))
+    if current_user() and current_user().active:
+        return redirect(url_for('index'))
     if request.method == 'POST':
-        username = request.form.get('username','').strip()
-        password = request.form.get('password','')
+        username = request.form.get('username', '').strip()[:80]
+        password = request.form.get('password', '')
+        ip_hash = _login_fingerprint(request.remote_addr or 'unknown')
+        username_hash = _login_fingerprint(username.casefold())
+        now = datetime.utcnow()
+
+        # Persistent throttling is shared by all Gunicorn workers and survives restarts.
+        LoginAttempt.query.filter(
+            LoginAttempt.attempted_at < now - timedelta(days=1)
+        ).delete(synchronize_session=False)
+        if _login_is_limited(ip_hash, username_hash, now):
+            db.session.commit()
+            flash('Sisselogimine ajutiselt piiratud. Proovi 15 minuti pärast uuesti.', 'error')
+            return render_template('login.html'), 429
+
         user = User.query.filter_by(username=username, active=True).first()
         if user and user.check_password(password):
-            session.clear(); session['user_id'] = user.id
+            session.clear()
+            session.permanent = True
+            session['user_id'] = user.id
+            session['session_version'] = user.session_version
+            db.session.commit()
             return redirect(url_for('index'))
+
+        db.session.add(LoginAttempt(
+            ip_hash=ip_hash,
+            username_hash=username_hash,
+            attempted_at=now
+        ))
+        db.session.commit()
         flash('Vale kasutajanimi või parool.', 'error')
     return render_template('login.html')
+
 
 @app.route('/logout', methods=['POST'])
 @login_required
@@ -243,8 +353,8 @@ def category_readings(category_id):
                     if (
                         day_value < 0
                         or night_value < 0
-                        or not __import__('math').isfinite(day_value)
-                        or not __import__('math').isfinite(night_value)
+                        or not math.isfinite(day_value)
+                        or not math.isfinite(night_value)
                     ):
                         raise ValueError()
 
@@ -305,7 +415,7 @@ def category_readings(category_id):
                 try:
                     value = float(raw)
 
-                    if value < 0 or not __import__('math').isfinite(value):
+                    if value < 0 or not math.isfinite(value):
                         raise ValueError()
 
                 except ValueError:
@@ -444,8 +554,8 @@ def edit_reading(reading_id):
             if (
                 day_value < 0
                 or night_value < 0
-                or not __import__('math').isfinite(day_value)
-                or not __import__('math').isfinite(night_value)
+                or not math.isfinite(day_value)
+                or not math.isfinite(night_value)
             ):
                 raise ValueError()
 
@@ -482,7 +592,7 @@ def edit_reading(reading_id):
             raw_value = request.form.get('value', '').strip().replace(' ', '').replace('\u00a0', '').replace(',', '.')
             new_value = float(raw_value)
 
-            if new_value < 0 or not __import__('math').isfinite(new_value):
+            if new_value < 0 or not math.isfinite(new_value):
                 raise ValueError()
 
             if previous and new_value < previous.value:
@@ -558,6 +668,14 @@ def export_xlsx():
         'Öö eelmine näit', 'Öö praegune näit', 'Öö tarbimine',
         'Märkus', 'Sisestaja', 'Sisestatud'
     ])
+    def safe_excel_text(value):
+        if not isinstance(value, str):
+            return value
+        probe = value.lstrip(' \\t\\r\\n')
+        if probe.startswith(('=', '+', '-', '@')):
+            return "'" + value
+        return value
+
     for r in readings:
         prev = previous_reading(r.meter_id, period)
         if r.meter.tariff_mode == 'dual':
@@ -583,6 +701,9 @@ def export_xlsx():
                 r.note or '', r.user.username if r.user else '',
                 r.entered_at.strftime('%Y-%m-%d %H:%M')
             ])
+            for cell in ws[ws.max_row]:
+                if isinstance(cell.value, str):
+                    cell.value = safe_excel_text(cell.value)
         else:
             consumption = r.value - prev.value if prev else None
             ws.append([
@@ -593,6 +714,9 @@ def export_xlsx():
                 r.note or '', r.user.username if r.user else '',
                 r.entered_at.strftime('%Y-%m-%d %H:%M')
             ])
+            for cell in ws[ws.max_row]:
+                if isinstance(cell.value, str):
+                    cell.value = safe_excel_text(cell.value)
     for cell in ws[1]:
         cell.font = Font(bold=True, color='FFFFFF'); cell.fill = PatternFill('solid', fgColor='174A6E'); cell.alignment = Alignment(wrap_text=True)
     ws.freeze_panes = 'A2'; ws.auto_filter.ref = ws.dimensions
@@ -873,7 +997,10 @@ def admin_reorder_centers():
     ids = payload.get('ids')
     visible = Center.query.filter(Center.deleted_at.is_(None)).all()
     mapping = {x.id: x for x in visible}
-    if not isinstance(ids, list) or len(ids) != len(set(ids)) or any(type(i) is not int or i not in mapping for i in ids):
+    if (not isinstance(ids, list)
+        or not all(type(i) is int for i in ids)
+        or len(ids) != len(set(ids))
+        or any(i not in mapping for i in ids)):
         return jsonify({'success': False, 'message': 'Vigane objektide järjestus.'}), 400
     ids = ids + [x.id for x in visible if x.id not in ids]
     for n, ident in enumerate(ids, 1): mapping[ident].sort_order = n * 10
@@ -889,7 +1016,10 @@ def admin_reorder_categories(center_id):
     ids = payload.get('ids')
     visible = [x for x in center.categories if x.deleted_at is None]
     mapping = {x.id: x for x in visible}
-    if not isinstance(ids, list) or len(ids) != len(set(ids)) or any(type(i) is not int or i not in mapping for i in ids):
+    if (not isinstance(ids, list)
+        or not all(type(i) is int for i in ids)
+        or len(ids) != len(set(ids))
+        or any(i not in mapping for i in ids)):
         return jsonify({'success': False, 'message': 'Vigane kategooriate järjestus.'}), 400
     ids = ids + [x.id for x in visible if x.id not in ids]
     for n, ident in enumerate(ids, 1): mapping[ident].sort_order = n * 10
@@ -995,8 +1125,8 @@ def admin_delete_meter(meter_id):
 @admin_required
 def admin_add_user():
     username=request.form.get('username','').strip(); password=request.form.get('password',''); role=request.form.get('role','user')
-    if not username or len(password) < 10 or role not in {'user','admin'}:
-        flash('Kasutajanimi on kohustuslik ja parool peab olema vähemalt 10 märki.', 'error')
+    if not username or len(password) < 14 or role not in {'user','admin'}:
+        flash('Kasutajanimi on kohustuslik ja parool peab olema vähemalt 14 märki.', 'error')
     elif User.query.filter_by(username=username).first(): flash('See kasutajanimi on juba kasutusel.', 'error')
     else:
         u=User(username=username, role=role); u.set_password(password); db.session.add(u); log_action('user_created', f'{username} ({role})'); db.session.commit(); flash('Kasutaja lisatud.', 'success')
@@ -1015,8 +1145,8 @@ def admin_toggle_user(user_id):
 @admin_required
 def admin_reset_password(user_id):
     u=db.get_or_404(User,user_id); password=request.form.get('password','')
-    if len(password) < 10: flash('Parool peab olema vähemalt 10 märki.', 'error')
-    else: u.set_password(password); log_action('password_reset', u.username); db.session.commit(); flash('Parool muudetud.', 'success')
+    if len(password) < 14: flash('Parool peab olema vähemalt 14 märki.', 'error')
+    else: u.set_password(password); u.session_version += 1; log_action('password_reset', u.username); db.session.commit(); flash('Parool muudetud. Kasutaja peab uuesti sisse logima.', 'success')
     return redirect(url_for('admin_home'))
 
 @app.errorhandler(403)
@@ -1028,6 +1158,12 @@ with app.app_context():
     db.create_all()
 
     inspector = inspect(db.engine)
+
+    user_columns = [column['name'] for column in inspector.get_columns('user')]
+    if 'session_version' not in user_columns:
+        db.session.execute(text(
+            "ALTER TABLE \"user\" ADD COLUMN session_version INTEGER NOT NULL DEFAULT 1"
+        ))
 
     center_columns = [column['name'] for column in inspector.get_columns('center')]
 
@@ -1076,8 +1212,14 @@ with app.app_context():
     # Optional first-run admin bootstrap. Never hardcode production credentials.
     bootstrap_user = os.environ.get('BOOTSTRAP_ADMIN_USER')
     bootstrap_password = os.environ.get('BOOTSTRAP_ADMIN_PASSWORD')
-    if bootstrap_user and bootstrap_password and not User.query.filter_by(role='admin').first():
-        admin = User(username=bootstrap_user, role='admin'); admin.set_password(bootstrap_password); db.session.add(admin); db.session.commit()
+    if bootstrap_user and bootstrap_password:
+        if len(bootstrap_user.strip()) > 80 or len(bootstrap_password) < 14:
+            raise RuntimeError('Bootstrap admin username must be <=80 characters and password >=14 characters.')
+        if not User.query.filter_by(role='admin').first():
+            admin = User(username=bootstrap_user.strip(), role='admin')
+            admin.set_password(bootstrap_password)
+            db.session.add(admin)
+            db.session.commit()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
