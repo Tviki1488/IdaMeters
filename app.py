@@ -50,7 +50,6 @@ class Category(db.Model):
     deleted_at = db.Column(db.DateTime, nullable=True)
     center_id = db.Column(db.Integer, db.ForeignKey('center.id'), nullable=False)
     name = db.Column(db.String(160), nullable=False)
-    comment = db.Column(db.Text, nullable=True)
     active = db.Column(db.Boolean, nullable=False, default=True)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     meters = db.relationship('Meter', backref='category', cascade='all, delete-orphan', order_by='Meter.sort_order')
@@ -211,26 +210,6 @@ def category_readings(category_id):
     meters = [m for m in category.meters if m.active and m.deleted_at is None]
 
     if request.method == 'POST':
-        # Category-level comment is saved independently from meter readings.
-        if request.form.get('action') == 'save_category_comment':
-            new_comment = request.form.get('category_comment', '').strip()[:2000]
-            old_comment = category.comment or ''
-            category.comment = new_comment or None
-            if old_comment != (category.comment or ''):
-                log_action(
-                    'category_comment_updated',
-                    f'{category.center.name} / {category.name}'
-                )
-                db.session.commit()
-                flash('Kategooria märkus salvestatud.', 'success')
-            else:
-                flash('Muudatusi ei olnud.', 'info')
-            return redirect(url_for(
-                'category_readings',
-                category_id=category.id,
-                period=period
-            ))
-
         saved = 0
         errors = []
 
@@ -417,7 +396,7 @@ def history():
     query = query.filter((Meter.deleted_at.is_(None)) | (db.func.strftime('%Y-%m', Meter.deleted_at) >= period)) if db.engine.dialect.name == 'sqlite' else query.filter((Meter.deleted_at.is_(None)) | (db.func.to_char(Meter.deleted_at, 'YYYY-MM') >= period))
     if center_id: query = query.filter(Center.id == center_id)
     readings = query.order_by(Center.sort_order, Center.name, Category.sort_order, Meter.sort_order).all()
-    centers = Center.query.order_by(Center.sort_order, Center.name).all()
+    centers = Center.query.filter_by(active=True, deleted_at=None).order_by(Center.sort_order, Center.name).all()
     return render_template('history.html', readings=readings, centers=centers, period=period, center_id=center_id)
 
 @app.route('/history/<int:reading_id>/delete', methods=['POST'])
@@ -1046,12 +1025,6 @@ with app.app_context():
     category_columns = [column['name'] for column in inspector.get_columns('category')]
     if 'deleted_at' not in category_columns:
         db.session.execute(text("ALTER TABLE category ADD COLUMN deleted_at TIMESTAMP"))
-
-    category_columns = [column['name'] for column in inspector.get_columns('category')]
-    if 'comment' not in category_columns:
-        db.session.execute(text(
-            "ALTER TABLE category ADD COLUMN comment TEXT"
-        ))
 
     meter_columns = [column['name'] for column in inspector.get_columns('meter')]
 
