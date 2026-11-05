@@ -15,7 +15,20 @@
         <article class="meter-card">
             <div class="meter-top">
                 <div class="meter-icon">{% if row.meter.resource_type == 'Elekter' %}ϟ{% elif 'vesi' in row.meter.resource_type|lower %}≈{% elif row.meter.resource_type == 'Gaas' %}♨{% else %}▤{% endif %}</div>
-                <div class="meter-name"><h2>{{ row.meter.name }}{% if row.meter.description %} <span class="meter-info-wrap"><button type="button" class="meter-info-button" aria-label="Lisainfo arvesti kohta" title="Lisainfo" onclick="event.preventDefault();event.stopPropagation();this.nextElementSibling.hidden=!this.nextElementSibling.hidden">i</button><span class="meter-info-popover" hidden>{{ row.meter.description }}</span></span>{% endif %}</h2><p class="muted">{{ row.meter.resource_type }}{% if row.meter.meter_code %} · {{ row.meter.meter_code }}{% endif %}</p></div>
+                <div class="meter-name"><h2>{{ row.meter.name }}{% if row.meter.description %} <span class="meter-info-wrap">
+                    <button type="button" class="meter-info-button" aria-label="Ava arvesti lisainfo" aria-expanded="false"
+                        onclick="event.preventDefault();event.stopPropagation();const panel=this.parentElement.querySelector('.meter-info-popover');const isOpen=!panel.hidden;document.querySelectorAll('.meter-info-popover').forEach(p=>{p.hidden=true;p.parentElement.querySelector('.meter-info-button').setAttribute('aria-expanded','false')});panel.hidden=isOpen;this.setAttribute('aria-expanded',String(!isOpen));">
+                        i
+                    </button>
+                    <span class="meter-info-popover" role="dialog" aria-label="Arvesti lisainfo" hidden>
+                        <span class="meter-info-popover-head">
+                            <strong>Arvesti lisainfo</strong>
+                            <button type="button" class="meter-info-close" aria-label="Sulge"
+                                onclick="event.stopPropagation();const panel=this.closest('.meter-info-popover');panel.hidden=true;panel.parentElement.querySelector('.meter-info-button').setAttribute('aria-expanded','false');">×</button>
+                        </span>
+                        <span class="meter-info-popover-text">{{ row.meter.description }}</span>
+                    </span>
+                </span>{% endif %}</h2><p class="muted">{{ row.meter.resource_type }}{% if row.meter.meter_code %} · {{ row.meter.meter_code }}{% endif %}</p></div>
                 {% if row.meter.tariff_mode == 'dual' %}<span class="tariff-badge">2 tariifi</span>{% endif %}
                 <span class="unit-chip">{{ row.meter.unit }}</span>
             </div>
