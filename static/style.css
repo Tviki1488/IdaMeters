@@ -1225,3 +1225,43 @@
     word-break: normal;
   }
 }
+
+
+/* Desktop category note refinement.
+   Mobile rules above remain untouched: the compact mobile appearance is preserved. */
+@media (min-width: 601px) {
+    .category-note-card {
+        align-items: center;
+        gap: 13px;
+        margin: 12px 0 17px;
+        padding: 11px 15px;
+        border-left-width: 3px;
+        border-radius: 12px;
+        box-shadow: 0 3px 12px rgba(23,52,72,.035);
+    }
+    .category-note-icon {
+        flex: 0 0 30px;
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        font-size: 15px;
+    }
+    .category-note-content {
+        display: grid;
+        grid-template-columns: 155px minmax(0, 1fr);
+        align-items: center;
+        column-gap: 18px;
+    }
+    .category-note-eyebrow {
+        margin: 0;
+        font-size: 9px;
+        letter-spacing: 1.15px;
+        line-height: 1.35;
+        white-space: nowrap;
+    }
+    .category-note-text {
+        font-size: 13px;
+        line-height: 1.45;
+        color: #536b7a;
+    }
+}
