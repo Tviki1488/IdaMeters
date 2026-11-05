@@ -853,4 +853,159 @@ document.addEventListener('DOMContentLoaded', function () {
     }, true);
 });
 </script>
+<!-- Сохранение открытых категорий и позиции страницы -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const restoreKey = 'forusAdminCategoryRestore';
+
+    // Восстанавливаем состояние после обновления страницы
+    try {
+        const saved = sessionStorage.getItem(restoreKey);
+
+        if (saved) {
+            const state = JSON.parse(saved);
+            sessionStorage.removeItem(restoreKey);
+
+            // Восстанавливаем все ранее открытые объекты,
+            // категории и счётчики
+            (state.openDetails || []).forEach(function (id) {
+                const element = document.querySelector(
+                    '[data-restore-id="' + id + '"]'
+                );
+
+                if (element) element.open = true;
+            });
+
+            // После редактирования раскрываем нужную категорию
+            if (state.categoryId) {
+                const category = document.querySelector(
+                    '[data-restore-id="category-' + state.categoryId + '"]'
+                );
+
+                if (category) {
+                    category.open = true;
+
+                    const center = category.closest('.admin-item');
+                    if (center) center.open = true;
+                }
+            }
+
+            // После добавления категории раскрываем нужный объект
+            if (state.centerId) {
+                const center = document.querySelector(
+                    '[data-restore-id="center-' + state.centerId + '"]'
+                );
+
+                if (center) center.open = true;
+            }
+
+            // Возвращаем страницу на прежнюю позицию
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    let target = null;
+
+                    if (state.categoryId) {
+                        const category = document.querySelector(
+                            '[data-restore-id="category-' + state.categoryId + '"]'
+                        );
+
+                        if (category) {
+                            target = category.querySelector(':scope > summary');
+                        }
+                    }
+
+                    if (!target && state.centerId) {
+                        const center = document.querySelector(
+                            '[data-restore-id="center-' + state.centerId + '"]'
+                        );
+
+                        if (center) {
+                            target = center.querySelector(':scope > summary');
+                        }
+                    }
+
+                    if (target && Number.isFinite(state.viewportTop)) {
+                        const newScroll =
+                            window.scrollY +
+                            target.getBoundingClientRect().top -
+                            state.viewportTop;
+
+                        window.scrollTo({
+                            top: Math.max(0, newScroll),
+                            behavior: 'instant'
+                        });
+                    } else if (Number.isFinite(state.scrollY)) {
+                        window.scrollTo({
+                            top: state.scrollY,
+                            behavior: 'instant'
+                        });
+                    }
+                });
+            });
+        }
+    } catch (error) {
+        sessionStorage.removeItem(restoreKey);
+        console.error('Category position restoration error:', error);
+    }
+
+    // Сохраняем состояние перед редактированием категории
+    document.querySelectorAll('.category-edit-form').forEach(function (form) {
+        form.addEventListener('submit', function () {
+            const category = form.closest('.nested-item');
+            if (!category) return;
+
+            const summary = category.querySelector(':scope > summary');
+
+            saveState({
+                categoryId: category.dataset.categoryId,
+                viewportTop: summary
+                    ? summary.getBoundingClientRect().top
+                    : 0
+            });
+        });
+    });
+
+    // Сохраняем состояние перед добавлением новой категории
+    document.querySelectorAll('.add-category-form').forEach(function (form) {
+        form.addEventListener('submit', function () {
+            const centerId = form.querySelector(
+                'input[name="center_id"]'
+            )?.value;
+
+            if (!centerId) return;
+
+            const center = form.closest('.admin-item');
+            const summary = center
+                ? center.querySelector(':scope > summary')
+                : null;
+
+            saveState({
+                centerId: centerId,
+                viewportTop: summary
+                    ? summary.getBoundingClientRect().top
+                    : 0
+            });
+        });
+    });
+
+    // Общая функция сохранения состояния
+    function saveState(extra) {
+        const openDetails = Array.from(
+            document.querySelectorAll(
+                '.admin-item[open], .nested-item[open], .meter-admin[open]'
+            )
+        )
+        .map(function (element) {
+            return element.dataset.restoreId;
+        })
+        .filter(Boolean);
+
+        sessionStorage.setItem(restoreKey, JSON.stringify({
+            ...extra,
+            scrollY: window.scrollY,
+            openDetails: openDetails
+        }));
+    }
+});
+</script>
 {% endblock %}
