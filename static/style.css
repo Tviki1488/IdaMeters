@@ -1107,3 +1107,13 @@
 .category-comment-field textarea:focus, .add-category-form textarea:focus { outline:0; border-color:#9bb6c7; box-shadow:0 0 0 3px rgba(21,61,89,.08); }
 .category-comment-field small { color:var(--muted); font-size:10px; font-weight:400; }
 @media (max-width:640px) { .category-comment-field { flex-basis:100%; } }
+
+/* Category comment editor: independent full-width form below category name/order. */
+.category-edit-form { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.category-comment-form { display:flex; flex-direction:column; align-items:stretch; gap:8px; width:100%; max-width:100%; margin:0 0 16px; padding:12px; background:#fff; border:1px solid var(--line); border-radius:10px; }
+.category-comment-field { display:flex; flex-direction:column; gap:6px; width:100%; min-width:0; margin:0; color:var(--muted); font-size:11px; font-weight:700; }
+.category-comment-field textarea { display:block; width:100%; min-width:0; min-height:76px; resize:vertical; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); font:inherit; font-size:13px; font-weight:400; line-height:1.45; }
+.category-comment-field textarea:focus { outline:0; border-color:#9bb6c7; box-shadow:0 0 0 3px rgba(21,61,89,.08); }
+.category-comment-field small { color:var(--muted); font-size:10px; font-weight:400; }
+.category-comment-form .button { align-self:flex-end; }
+@media(max-width:600px) { .category-edit-form { flex-wrap:wrap; } .category-edit-form input:first-of-type { flex:1 1 100%; } .category-comment-form { padding:10px; } .category-comment-form .button { width:100%; } }
