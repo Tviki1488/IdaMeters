@@ -50,6 +50,7 @@ class Category(db.Model):
     deleted_at = db.Column(db.DateTime, nullable=True)
     center_id = db.Column(db.Integer, db.ForeignKey('center.id'), nullable=False)
     name = db.Column(db.String(160), nullable=False)
+    comment = db.Column(db.Text, nullable=True)
     active = db.Column(db.Boolean, nullable=False, default=True)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     meters = db.relationship('Meter', backref='category', cascade='all, delete-orphan', order_by='Meter.sort_order')
@@ -396,7 +397,7 @@ def history():
     query = query.filter((Meter.deleted_at.is_(None)) | (db.func.strftime('%Y-%m', Meter.deleted_at) >= period)) if db.engine.dialect.name == 'sqlite' else query.filter((Meter.deleted_at.is_(None)) | (db.func.to_char(Meter.deleted_at, 'YYYY-MM') >= period))
     if center_id: query = query.filter(Center.id == center_id)
     readings = query.order_by(Center.sort_order, Center.name, Category.sort_order, Meter.sort_order).all()
-    centers = Center.query.filter_by(active=True, deleted_at=None).order_by(Center.sort_order, Center.name).all()
+    centers = Center.query.order_by(Center.sort_order, Center.name).all()
     return render_template('history.html', readings=readings, centers=centers, period=period, center_id=center_id)
 
 @app.route('/history/<int:reading_id>/delete', methods=['POST'])
@@ -711,6 +712,7 @@ def admin_add_category():
         db.session.add(Category(
             center_id=center.id,
             name=name,
+            comment=request.form.get('comment', '').strip()[:2000] or None,
             sort_order=request.form.get('sort_order', 0, type=int)
         ))
         log_action('category_created', f'{center.name} / {name}')
@@ -727,9 +729,13 @@ def admin_edit_category(category_id):
     if c.deleted_at is not None or c.center.deleted_at is not None:
         flash('Kustutatud kategooriat ei saa muuta.', 'warning')
     elif name:
+        old_comment = c.comment or ''
         c.name = name
+        c.comment = request.form.get('comment', '').strip()[:2000] or None
         c.sort_order = request.form.get('sort_order', c.sort_order, type=int)
         log_action('category_updated', c.name)
+        if old_comment != (c.comment or ''):
+            log_action('category_comment_updated', f'{c.center.name} / {c.name}')
         db.session.commit()
         flash('Kategooria uuendatud.', 'success')
     return redirect(url_for('admin_home'))
@@ -1025,6 +1031,12 @@ with app.app_context():
     category_columns = [column['name'] for column in inspector.get_columns('category')]
     if 'deleted_at' not in category_columns:
         db.session.execute(text("ALTER TABLE category ADD COLUMN deleted_at TIMESTAMP"))
+
+    category_columns = [column['name'] for column in inspector.get_columns('category')]
+    if 'comment' not in category_columns:
+        db.session.execute(text(
+            "ALTER TABLE category ADD COLUMN comment TEXT"
+        ))
 
     meter_columns = [column['name'] for column in inspector.get_columns('meter')]
 
