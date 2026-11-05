@@ -221,6 +221,12 @@ def format_number(value):
 def inject_globals():
     return {'logged_in_user': current_user(), 'current_year': date.today().year}
 
+@app.get('/health')
+def healthcheck():
+    # Lightweight liveness endpoint for Coolify; intentionally does not query the database.
+    return jsonify(status='ok'), 200
+
+
 @app.route('/')
 @login_required
 def index():
