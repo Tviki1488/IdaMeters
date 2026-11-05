@@ -725,15 +725,23 @@ def admin_add_category():
 @admin_required
 def admin_edit_category(category_id):
     c = db.get_or_404(Category, category_id)
-    name = request.form.get('name', '').strip()
+    name = request.form.get('name')
     if c.deleted_at is not None or c.center.deleted_at is not None:
         flash('Kustutatud kategooriat ei saa muuta.', 'warning')
-    elif name:
+    else:
+        old_name = c.name
         old_comment = c.comment or ''
-        c.name = name
-        c.comment = request.form.get('comment', '').strip()[:2000] or None
-        c.sort_order = request.form.get('sort_order', c.sort_order, type=int)
-        log_action('category_updated', c.name)
+        if name is not None:
+            name = name.strip()
+            if not name:
+                flash('Kategooria nimi ei saa olla tühi.', 'error')
+                return redirect(url_for('admin_home'))
+            c.name = name
+            c.sort_order = request.form.get('sort_order', c.sort_order, type=int)
+        if 'comment' in request.form:
+            c.comment = request.form.get('comment', '').strip()[:2000] or None
+        if old_name != c.name:
+            log_action('category_updated', c.name)
         if old_comment != (c.comment or ''):
             log_action('category_comment_updated', f'{c.center.name} / {c.name}')
         db.session.commit()
