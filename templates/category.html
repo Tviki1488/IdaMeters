@@ -6,6 +6,16 @@
     <div><p class="eyebrow">{{ category.center.name }} / KATEGOORIA</p><h1>{{ category.name }}</h1><p class="muted">Sisesta selle kategooria mõõdikute näidud. Tühjaks jäetud välju ei muudeta.</p></div>
     <form class="period-form"><label for="period">Arvestuskuu</label><input id="period" type="month" name="period" value="{{ period }}"><button class="button button-secondary" type="submit">Ava kuu</button></form>
 </div>
+{% if category.comment %}
+<section class="category-note-card" aria-label="Kategooria info">
+    <div class="category-note-icon" aria-hidden="true">i</div>
+    <div class="category-note-content">
+        <p class="category-note-eyebrow">KATEGOORIA INFO</p>
+        <h2>Kategooria märkus</h2>
+        <p class="category-note-text">{{ category.comment }}</p>
+    </div>
+</section>
+{% endif %}
 <form method="post" class="reading-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="reading-toolbar"><div><strong>{{ rows|length }} mõõdikut</strong><span class="muted"> · {{ period }}</span></div><button class="button button-primary" type="submit">Salvesta näidud</button></div>
