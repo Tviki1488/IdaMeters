@@ -101,7 +101,7 @@
                                 <span class="category-drag-handle drag-handle" draggable="true" title="Lohista kategooria järjestamiseks">⠿</span>
                                 <span class="status-dot {% if not cat.active or cat.deleted_at is not none %}inactive{% endif %}"></span>
                                 <span class="admin-item-name">{{ cat.name }}</span>
-                                {% if cat.description %}<span class="meter-info-wrap"><button type="button" class="meter-info-button" aria-label="Kategooria info" title="Kategooria info" onclick="event.preventDefault();event.stopPropagation();this.nextElementSibling.hidden=!this.nextElementSibling.hidden">i</button><span class="meter-info-popover" hidden>{{ cat.description }}</span></span>{% endif %}
+                                {% if cat.comment %}<span class="meter-info-wrap"><button type="button" class="meter-info-button" aria-label="Kategooria info" title="Kategooria info" onclick="event.preventDefault();event.stopPropagation();this.nextElementSibling.hidden=!this.nextElementSibling.hidden">i</button><span class="meter-info-popover" hidden>{{ cat.comment }}</span></span>{% endif %}
                                 <span class="muted">{{ cat.meters|selectattr('deleted_at', 'none')|list|length }} mõõdikut</span>
                                 <span class="chevron">⌄</span>
                             </summary>
@@ -120,7 +120,7 @@
                                     </div>
                                     <label class="category-description-label">
                                         Kategooria kommentaar / info
-                                        <textarea name="description" rows="2" maxlength="2000" placeholder="Lisa kategooria kohta oluline info, juhised või tähelepanekud...">{{ cat.description or '' }}</textarea>
+                                        <textarea name="comment" rows="2" maxlength="2000" placeholder="Lisa kategooria kohta oluline info, juhised või tähelepanekud...">{{ cat.comment or '' }}</textarea>
                                     </label>
                                     <small class="muted">Valikuline · kuni 2000 märki. Nähtav kasutajatele infoikooni kaudu.</small>
 
@@ -183,7 +183,7 @@
                                                 </label>
                                                 <label>
                                                     Lisainfo (asukoht, ruum, märkused)
-                                                    <textarea name="description" rows="2" maxlength="2000">{{ m.description or '' }}</textarea>
+                                                    <textarea name="comment" rows="2" maxlength="2000">{{ m.description or '' }}</textarea>
                                                 </label>
 
                                                 <div class="form-two">
@@ -306,7 +306,7 @@
                                     </label>
                                     <label>
                                         Lisainfo (asukoht, ruum, märkused)
-                                        <textarea name="description" rows="2" maxlength="2000" placeholder="Nt elektrikilp keldrikorrusel..."></textarea>
+                                        <textarea name="comment" rows="2" maxlength="2000" placeholder="Nt elektrikilp keldrikorrusel..."></textarea>
                                     </label>
 
                                     <div class="form-two">
