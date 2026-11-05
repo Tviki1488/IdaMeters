@@ -1666,3 +1666,236 @@
     padding: 11px;
   }
 }
+
+
+/* Haldus: one consistent editor layout for categories and every meter. */
+#center-sort-list .category-edit-form,
+#center-sort-list .meter-admin > .nested-body > form.meter-editor-card,
+#center-sort-list .add-meter-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 13px;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(23,52,72,.035);
+}
+#center-sort-list .category-edit-form .category-edit-top {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px auto;
+  align-items: end;
+  gap: 10px;
+}
+#center-sort-list .category-edit-form > .category-description-label,
+#center-sort-list .category-edit-form > small {
+  grid-column: 1 / -1;
+}
+#center-sort-list .category-edit-form label,
+#center-sort-list .add-meter-form > label,
+#center-sort-list .meter-editor-card > label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  color: #607482;
+  font-size: 12px;
+  font-weight: 700;
+}
+#center-sort-list .category-edit-form input,
+#center-sort-list .category-edit-form textarea,
+#center-sort-list .add-meter-form input,
+#center-sort-list .add-meter-form select,
+#center-sort-list .add-meter-form textarea,
+#center-sort-list .meter-editor-card input,
+#center-sort-list .meter-editor-card select,
+#center-sort-list .meter-editor-card textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 41px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #d8e2e8;
+  border-radius: 9px;
+  background: #fbfcfd;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+#center-sort-list .category-edit-form textarea,
+#center-sort-list .add-meter-form textarea,
+#center-sort-list .meter-editor-card textarea {
+  min-height: 72px;
+  line-height: 1.45;
+  resize: vertical;
+}
+#center-sort-list .category-edit-form input:focus,
+#center-sort-list .category-edit-form textarea:focus,
+#center-sort-list .add-meter-form input:focus,
+#center-sort-list .add-meter-form select:focus,
+#center-sort-list .add-meter-form textarea:focus,
+#center-sort-list .meter-editor-card input:focus,
+#center-sort-list .meter-editor-card select:focus,
+#center-sort-list .meter-editor-card textarea:focus {
+  outline: none;
+  border-color: #8eafc1;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(21,61,89,.07);
+}
+#center-sort-list .category-edit-form .category-edit-top > button,
+#center-sort-list .meter-editor-card > button[type="submit"] {
+  min-height: 41px;
+  white-space: nowrap;
+}
+#center-sort-list .category-edit-form > small {
+  margin-top: -5px;
+  color: var(--muted);
+  font-size: 11px;
+}
+#center-sort-list .add-meter-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 12px;
+  padding: 16px;
+  border-style: solid;
+}
+#center-sort-list .add-meter-form > h4,
+#center-sort-list .add-meter-form > input[name="category_id"],
+#center-sort-list .add-meter-form > label:nth-of-type(1),
+#center-sort-list .add-meter-form > label:nth-of-type(2),
+#center-sort-list .add-meter-form > label:nth-of-type(3),
+#center-sort-list .add-meter-form > .form-two,
+#center-sort-list .add-meter-form > .tariff-setting,
+#center-sort-list .add-meter-form > button[type="submit"] {
+  grid-column: 1 / -1;
+}
+#center-sort-list .add-meter-form > h4 {
+  margin: 0 0 2px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+#center-sort-list .add-meter-form .form-two {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+#center-sort-list .add-meter-form .tariff-toggle {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #f7f9fa;
+}
+#center-sort-list .add-meter-form .tariff-toggle input {
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  padding: 0;
+}
+#center-sort-list .add-meter-form .tariff-toggle span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+#center-sort-list .add-meter-form .tariff-toggle strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+#center-sort-list .add-meter-form .tariff-toggle small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+#center-sort-list .add-meter-form > button[type="submit"] {
+  justify-self: start;
+  min-height: 41px;
+}
+#center-sort-list .category-admin-actions,
+#center-sort-list .meter-admin-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  margin: 9px 0 13px;
+  padding: 0 2px;
+}
+#center-sort-list .category-admin-actions form,
+#center-sort-list .meter-admin-actions form {
+  display: inline-flex;
+  margin: 0;
+}
+#center-sort-list .category-admin-actions .button,
+#center-sort-list .meter-admin-actions .button {
+  min-height: 37px;
+}
+#center-sort-list .category-admin-actions .meter-delete-button,
+#center-sort-list .meter-admin-actions .meter-delete-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #eadbdd;
+  border-radius: 8px;
+  background: #fff;
+  color: #a65c63;
+}
+#center-sort-list .category-admin-actions .meter-delete-button:hover,
+#center-sort-list .meter-admin-actions .meter-delete-button:hover {
+  background: #fff6f5;
+  border-color: #dfc1c4;
+}
+@media (max-width: 700px) {
+  #center-sort-list .category-edit-form,
+  #center-sort-list .meter-admin > .nested-body > form.meter-editor-card,
+  #center-sort-list .add-meter-form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 11px;
+    padding: 12px;
+  }
+  #center-sort-list .category-edit-form .category-edit-top {
+    grid-template-columns: minmax(0, 1fr) 82px;
+  }
+  #center-sort-list .category-edit-form .category-edit-top > button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  #center-sort-list .category-edit-form > label,
+  #center-sort-list .category-edit-form > small,
+  #center-sort-list .add-meter-form > *,
+  #center-sort-list .meter-editor-card > * {
+    grid-column: 1 / -1;
+  }
+  #center-sort-list .add-meter-form .form-two {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 9px;
+  }
+  #center-sort-list .add-meter-form > button[type="submit"] {
+    width: 100%;
+  }
+  #center-sort-list .category-admin-actions,
+  #center-sort-list .meter-admin-actions {
+    gap: 7px;
+    margin-top: 8px;
+  }
+  #center-sort-list .category-admin-actions form,
+  #center-sort-list .meter-admin-actions form {
+    flex: 1 1 auto;
+  }
+  #center-sort-list .category-admin-actions .button,
+  #center-sort-list .meter-admin-actions .button {
+    width: 100%;
+    min-height: 40px;
+  }
+}
