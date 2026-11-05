@@ -33,7 +33,7 @@
         <thead>
             <tr>
                 <th>Objekt</th><th>Kategooria</th><th>Mõõdik</th><th>Ressurss</th>
-                <th>Eelmine kokku</th><th>Praegune kokku</th><th>Kokku tarbitud</th><th>Sisestaja</th>
+                <th>Eelmine kokku</th><th>Praegune kokku</th><th>Sisestaja</th>
                 {% if logged_in_user and logged_in_user.role == 'admin' %}<th>Tegevused</th>{% endif %}
             </tr>
         </thead>
@@ -57,31 +57,43 @@
                     {% else %}
                         <span class="status-label status-active">Aktiivne</span>
                     {% endif %}
-                    {% if r.meter.tariff_mode == 'dual' %}
-                    <span class="tariff-badge table-badge">2 tariifi</span>
-                    <details class="history-tariff-details">
-                        <summary>Näita päev / öö</summary>
-                        <div class="history-detail-grid">
-                            <div class="history-detail-panel history-day">
-                                <div class="history-detail-heading"><span>☀</span><strong>Päev</strong></div>
-                                <div class="history-detail-row"><span>Eelmine</span><strong>{{ p.value.day_value|num if p.value and p.value.day_value is not none else '—' }}</strong></div>
-                                <div class="history-detail-row"><span>Praegune</span><strong>{{ r.day_value|num if r.day_value is not none else '—' }}</strong></div>
-                                <div class="history-detail-consumption day-consumption">Tarbitud: <strong>{{ (r.day_value - p.value.day_value)|num if p.value and p.value.day_value is not none and r.day_value is not none else '—' }}</strong></div>
-                            </div>
-                            <div class="history-detail-panel history-night">
-                                <div class="history-detail-heading"><span>☾</span><strong>Öö</strong></div>
-                                <div class="history-detail-row"><span>Eelmine</span><strong>{{ p.value.night_value|num if p.value and p.value.night_value is not none else '—' }}</strong></div>
-                                <div class="history-detail-row"><span>Praegune</span><strong>{{ r.night_value|num if r.night_value is not none else '—' }}</strong></div>
-                                <div class="history-detail-consumption night-consumption">Tarbitud: <strong>{{ (r.night_value - p.value.night_value)|num if p.value and p.value.night_value is not none and r.night_value is not none else '—' }}</strong></div>
-                            </div>
-                        </div>
-                    </details>
-                    {% endif %}
+
                 </td>
                 <td data-label="Ressurss">{{ r.meter.resource_type }}</td>
-                <td data-label="Eelmine kokku">{{ p.value.value|num if p.value else '—' }}</td>
-                <td data-label="Praegune kokku"><strong>{{ r.value|num }}</strong> {{ r.meter.unit }}</td>
-                <td data-label="Kokku tarbitud">{{ (r.value - p.value.value)|num if p.value else '—' }}</td>
+                <td data-label="Eelmine kokku">
+                    {% if r.meter.tariff_mode == 'dual' %}
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                        <div style="display:flex; align-items:baseline; gap:8px;">
+                            <span class="muted small">☀ Päev</span>
+                            <strong>{{ p.value.day_value|num if p.value and p.value.day_value is not none else '—' }}</strong>
+                        </div>
+                        <div style="display:flex; align-items:baseline; gap:8px;">
+                            <span class="muted small">☾ Öö</span>
+                            <strong>{{ p.value.night_value|num if p.value and p.value.night_value is not none else '—' }}</strong>
+                        </div>
+                    </div>
+                    {% else %}
+                    {{ p.value.value|num if p.value else '—' }}
+                    {% endif %}
+                </td>
+                <td data-label="Praegune kokku">
+                    {% if r.meter.tariff_mode == 'dual' %}
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                        <div style="display:flex; align-items:baseline; gap:8px;">
+                            <span class="muted small">☀ Päev</span>
+                            <strong>{{ r.day_value|num if r.day_value is not none else '—' }}</strong>
+                            <span>{{ r.meter.unit }}</span>
+                        </div>
+                        <div style="display:flex; align-items:baseline; gap:8px;">
+                            <span class="muted small">☾ Öö</span>
+                            <strong>{{ r.night_value|num if r.night_value is not none else '—' }}</strong>
+                            <span>{{ r.meter.unit }}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <strong>{{ r.value|num }}</strong> {{ r.meter.unit }}
+                    {% endif %}
+                </td>
                 <td data-label="Sisestaja">{{ r.user.username if r.user else '—' }}</td>
                 {% if logged_in_user and logged_in_user.role == 'admin' %}
                 <td data-label="Tegevused">
@@ -127,10 +139,10 @@
                 {% endif %}
             </tr>
             {% else %}
-            <tr><td colspan="{{ 9 if logged_in_user and logged_in_user.role == 'admin' else 8 }}">Valitud filtritega näite ei leitud.</td></tr>
+            <tr><td colspan="{{ 8 if logged_in_user and logged_in_user.role == 'admin' else 7 }}">Valitud filtritega näite ei leitud.</td></tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
-<p class="muted small-note">Tarbimine arvutatakse võrreldes eelmise salvestatud kuu näiduga. Kahetariifse arvesti päeva- ja öötarbimine arvutatakse eraldi.</p>
+<p class="muted small-note">Kahetariifse arvesti päeva- ja öönäidud kuvatakse eraldi eelmise ja praeguse näidu veerus.</p>
 {% endblock %}
