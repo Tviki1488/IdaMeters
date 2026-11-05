@@ -47,7 +47,6 @@ class Center(db.Model):
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    deleted_at = db.Column(db.DateTime, nullable=True)
     center_id = db.Column(db.Integer, db.ForeignKey('center.id'), nullable=False)
     name = db.Column(db.String(160), nullable=False)
     active = db.Column(db.Boolean, nullable=False, default=True)
@@ -59,7 +58,6 @@ class Meter(db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     name = db.Column(db.String(160), nullable=False)
     meter_code = db.Column(db.String(100), nullable=True)
-    description = db.Column(db.Text, nullable=True)
     resource_type = db.Column(db.String(40), nullable=False) # Elekter, Külm vesi, Soe vesi, Gaas, Muu
     unit = db.Column(db.String(20), nullable=False, default='m³')
     tariff_mode = db.Column(db.String(10), nullable=False, default='single')
@@ -220,11 +218,11 @@ def category_readings(category_id):
             if meter.tariff_mode == 'dual':
                 raw_day = request.form.get(
                     f'day_value_{meter.id}', ''
-                ).strip().replace(' ', '').replace('\u00a0', '').replace(',', '.')
+                ).strip().replace(',', '.')
 
                 raw_night = request.form.get(
                     f'night_value_{meter.id}', ''
-                ).strip().replace(' ', '').replace('\u00a0', '').replace(',', '.')
+                ).strip().replace(',', '.')
 
                 if raw_day == '' and raw_night == '':
                     continue
@@ -296,7 +294,7 @@ def category_readings(category_id):
             else:
                 raw = request.form.get(
                     f'value_{meter.id}', ''
-                ).strip().replace(' ', '').replace('\u00a0', '').replace(',', '.')
+                ).strip().replace(',', '.')
 
                 if raw == '':
                     continue
@@ -388,16 +386,36 @@ def history():
     if not valid_period(period): period = date.today().strftime('%Y-%m')
     center_id = request.args.get('center_id', type=int)
     query = Reading.query.join(Meter).join(Category).join(Center).filter(Reading.period == period)
-    # Historical records remain visible through the month in which the relevant
-    # object (center/category/meter) was removed, but never in later months.
-    cutoff = period + '-01'
-    query = query.filter((Center.deleted_at.is_(None)) | (db.func.strftime('%Y-%m', Center.deleted_at) >= period)) if db.engine.dialect.name == 'sqlite' else query.filter((Center.deleted_at.is_(None)) | (db.func.to_char(Center.deleted_at, 'YYYY-MM') >= period))
-    query = query.filter((Category.deleted_at.is_(None)) | (db.func.strftime('%Y-%m', Category.deleted_at) >= period)) if db.engine.dialect.name == 'sqlite' else query.filter((Category.deleted_at.is_(None)) | (db.func.to_char(Category.deleted_at, 'YYYY-MM') >= period))
-    query = query.filter((Meter.deleted_at.is_(None)) | (db.func.strftime('%Y-%m', Meter.deleted_at) >= period)) if db.engine.dialect.name == 'sqlite' else query.filter((Meter.deleted_at.is_(None)) | (db.func.to_char(Meter.deleted_at, 'YYYY-MM') >= period))
-    if center_id: query = query.filter(Center.id == center_id)
-    readings = query.order_by(Center.sort_order, Center.name, Category.sort_order, Meter.sort_order).all()
-    centers = Center.query.order_by(Center.sort_order, Center.name).all()
-    return render_template('history.html', readings=readings, centers=centers, period=period, center_id=center_id)
+    if center_id:
+        query = query.filter(Center.id == center_id)
+
+    # Keep historical readings visible through the month in which a center
+    # was removed, but hide them for later periods.
+    readings = query.order_by(
+        Center.sort_order,
+        Center.name,
+        Category.sort_order,
+        Meter.sort_order
+    ).all()
+    readings = [
+        reading for reading in readings
+        if reading.meter.category.center.deleted_at is None
+        or period <= reading.meter.category.center.deleted_at.strftime('%Y-%m')
+    ]
+
+    # Deleted/inactive centers must not remain available in the history filter.
+    centers = Center.query.filter_by(
+        active=True,
+        deleted_at=None
+    ).order_by(Center.sort_order, Center.name).all()
+
+    return render_template(
+        'history.html',
+        readings=readings,
+        centers=centers,
+        period=period,
+        center_id=center_id
+    )
 
 @app.route('/history/<int:reading_id>/delete', methods=['POST'])
 @admin_required
@@ -434,8 +452,8 @@ def edit_reading(reading_id):
 
     try:
         if reading.meter.tariff_mode == 'dual':
-            raw_day = request.form.get('day_value', '').strip().replace(' ', '').replace('\u00a0', '').replace(',', '.')
-            raw_night = request.form.get('night_value', '').strip().replace(' ', '').replace('\u00a0', '').replace(',', '.')
+            raw_day = request.form.get('day_value', '').strip().replace(',', '.')
+            raw_night = request.form.get('night_value', '').strip().replace(',', '.')
 
             day_value = float(raw_day)
             night_value = float(raw_night)
@@ -478,7 +496,7 @@ def edit_reading(reading_id):
             reading.value = day_value + night_value
 
         else:
-            raw_value = request.form.get('value', '').strip().replace(' ', '').replace('\u00a0', '').replace(',', '.')
+            raw_value = request.form.get('value', '').strip().replace(',', '.')
             new_value = float(raw_value)
 
             if new_value < 0 or not __import__('math').isfinite(new_value):
@@ -535,17 +553,6 @@ def export_xlsx():
     if not valid_period(period): period = date.today().strftime('%Y-%m')
     center_id = request.args.get('center_id', type=int)
     query = Reading.query.join(Meter).join(Category).join(Center).filter(Reading.period == period)
-    if db.engine.dialect.name == 'sqlite':
-        month_center = db.func.strftime('%Y-%m', Center.deleted_at)
-        month_category = db.func.strftime('%Y-%m', Category.deleted_at)
-        month_meter = db.func.strftime('%Y-%m', Meter.deleted_at)
-    else:
-        month_center = db.func.to_char(Center.deleted_at, 'YYYY-MM')
-        month_category = db.func.to_char(Category.deleted_at, 'YYYY-MM')
-        month_meter = db.func.to_char(Meter.deleted_at, 'YYYY-MM')
-    query = query.filter((Center.deleted_at.is_(None)) | (month_center >= period))
-    query = query.filter((Category.deleted_at.is_(None)) | (month_category >= period))
-    query = query.filter((Meter.deleted_at.is_(None)) | (month_meter >= period))
     if center_id: query = query.filter(Center.id == center_id)
     readings = query.order_by(Center.sort_order, Center.name, Category.sort_order, Meter.sort_order).all()
     wb = Workbook(); ws = wb.active; ws.title = 'Näidud'
@@ -607,21 +614,10 @@ def export_xlsx():
 @app.route('/admin')
 @admin_required
 def admin_home():
-    centers = Center.query.filter(Center.deleted_at.is_(None)).order_by(Center.sort_order, Center.name).all()
+    centers = Center.query.order_by(Center.sort_order, Center.name).all()
     users = User.query.order_by(User.username).all()
-    log_page = max(request.args.get('log_page', 1, type=int), 1)
-    try:
-        log_per_page = int(request.args.get('log_per_page', 10))
-    except (TypeError, ValueError):
-        log_per_page = 10
-    if log_per_page not in {10, 30, 60, 100, 200}:
-        log_per_page = 10
-    log_pagination = AuditLog.query.order_by(AuditLog.created_at.desc()).paginate(
-        page=log_page, per_page=log_per_page, error_out=False
-    )
-    return render_template('admin.html', centers=centers, users=users,
-                           logs=log_pagination.items, log_pagination=log_pagination,
-                           log_page=log_page, log_per_page=log_per_page)
+    logs = AuditLog.query.order_by(AuditLog.created_at.desc()).limit(30).all()
+    return render_template('admin.html', centers=centers, users=users, logs=logs)
 
 @app.route('/admin/center', methods=['POST'])
 @admin_required
@@ -670,17 +666,8 @@ def admin_delete_center(center_id):
         return redirect(url_for('admin_home'))
 
     center_name = c.name
-    deleted_time = datetime.utcnow()
-    c.deleted_at = deleted_time
+    c.deleted_at = datetime.utcnow()
     c.active = False
-    for category in c.categories:
-        if category.deleted_at is None:
-            category.deleted_at = deleted_time
-        category.active = False
-        for meter in category.meters:
-            if meter.deleted_at is None:
-                meter.deleted_at = deleted_time
-            meter.active = False
 
     log_action(
         'center_deleted',
@@ -697,72 +684,27 @@ def admin_delete_center(center_id):
 @app.route('/admin/category', methods=['POST'])
 @admin_required
 def admin_add_category():
-    name = request.form.get('name', '').strip()
-    center_id = request.form.get('center_id', type=int)
+    name = request.form.get('name','').strip(); center_id = request.form.get('center_id', type=int)
     center = db.session.get(Center, center_id) if center_id else None
-
-    if not name:
-        flash('Sisesta kategooria nimi.', 'error')
-    elif not center:
-        flash('Vali kaubanduskeskus.', 'error')
-    elif center.deleted_at is not None:
-        flash('Kustutatud kaubanduskeskusele ei saa kategooriat lisada.', 'error')
+    if not name or not center: flash('Vali kaubanduskeskus ja sisesta kategooria nimi.', 'error')
     else:
-        db.session.add(Category(
-            center_id=center.id,
-            name=name,
-            sort_order=request.form.get('sort_order', 0, type=int)
-        ))
-        log_action('category_created', f'{center.name} / {name}')
-        db.session.commit()
-        flash('Kategooria lisatud.', 'success')
-
+        db.session.add(Category(center_id=center.id, name=name, sort_order=request.form.get('sort_order', 0, type=int)))
+        log_action('category_created', f'{center.name} / {name}'); db.session.commit(); flash('Kategooria lisatud.', 'success')
     return redirect(url_for('admin_home'))
 
 @app.route('/admin/category/<int:category_id>/edit', methods=['POST'])
 @admin_required
 def admin_edit_category(category_id):
-    c = db.get_or_404(Category, category_id)
-    name = request.form.get('name', '').strip()
-    if c.deleted_at is not None or c.center.deleted_at is not None:
-        flash('Kustutatud kategooriat ei saa muuta.', 'warning')
-    elif name:
-        c.name = name
-        c.sort_order = request.form.get('sort_order', c.sort_order, type=int)
-        log_action('category_updated', c.name)
-        db.session.commit()
-        flash('Kategooria uuendatud.', 'success')
-    return redirect(url_for('admin_home'))
+    c = db.get_or_404(Category, category_id); name = request.form.get('name','').strip()
+    if name: c.name = name
+    c.sort_order = request.form.get('sort_order', c.sort_order, type=int)
+    log_action('category_updated', c.name); db.session.commit(); flash('Kategooria uuendatud.', 'success'); return redirect(url_for('admin_home'))
 
 @app.route('/admin/category/<int:category_id>/archive', methods=['POST'])
 @admin_required
 def admin_archive_category(category_id):
-    c = db.get_or_404(Category, category_id)
-    if c.deleted_at is not None:
-        flash('Kustutatud kategooria olekut ei saa muuta.', 'warning')
-    else:
-        c.active = not c.active
-        log_action('category_active_changed', f'{c.name}: active={c.active}')
-        db.session.commit()
-        flash('Kategooria olek muudetud.', 'success')
-    return redirect(url_for('admin_home'))
-
-@app.route('/admin/category/<int:category_id>/delete', methods=['POST'])
-@admin_required
-def admin_delete_category(category_id):
-    c = db.get_or_404(Category, category_id)
-    if c.deleted_at is None:
-        deleted_time = datetime.utcnow()
-        c.deleted_at = deleted_time
-        c.active = False
-        for meter in c.meters:
-            if meter.deleted_at is None:
-                meter.deleted_at = deleted_time
-            meter.active = False
-        log_action('category_deleted', f'{c.center.name} / {c.name}; historical readings preserved')
-        db.session.commit()
-        flash('Kategooria eemaldati aktiivsest arvestusest. Ajaloolised näidud säilitati.', 'success')
-    return redirect(url_for('admin_home'))
+    c = db.get_or_404(Category, category_id); c.active = not c.active
+    log_action('category_active_changed', f'{c.name}: active={c.active}'); db.session.commit(); flash('Kategooria olek muudetud.', 'success'); return redirect(url_for('admin_home'))
 
 
 @app.route('/admin/meter', methods=['POST'])
@@ -784,14 +726,13 @@ def admin_add_meter():
     if tariff_mode not in {'single', 'dual'}:
         tariff_mode = 'single'
 
-    if not category or category.deleted_at is not None or category.center.deleted_at is not None or not name or resource not in allowed or not unit:
+    if not category or not name or resource not in allowed or not unit:
         flash('Kontrolli kategooriat, mõõdiku nime, ressurssi ja ühikut.', 'error')
     else:
         m = Meter(
             category_id=category.id,
             name=name,
             meter_code=request.form.get('meter_code', '').strip() or None,
-            description=request.form.get('description', '').strip() or None,
             resource_type=resource,
             unit=unit,
             tariff_mode=tariff_mode,
@@ -852,37 +793,6 @@ def admin_reorder_meters(category_id):
     })
 
 
-@app.route('/admin/centers/reorder', methods=['POST'])
-@admin_required
-def admin_reorder_centers():
-    payload = request.get_json(silent=True) or {}
-    ids = payload.get('ids')
-    visible = Center.query.filter(Center.deleted_at.is_(None)).all()
-    mapping = {x.id: x for x in visible}
-    if not isinstance(ids, list) or len(ids) != len(set(ids)) or any(type(i) is not int or i not in mapping for i in ids):
-        return jsonify({'success': False, 'message': 'Vigane objektide järjestus.'}), 400
-    ids = ids + [x.id for x in visible if x.id not in ids]
-    for n, ident in enumerate(ids, 1): mapping[ident].sort_order = n * 10
-    log_action('centers_reordered', 'Kaubanduskeskuste järjestus muudetud')
-    db.session.commit()
-    return jsonify({'success': True})
-
-@app.route('/admin/center/<int:center_id>/categories/reorder', methods=['POST'])
-@admin_required
-def admin_reorder_categories(center_id):
-    center = db.get_or_404(Center, center_id)
-    payload = request.get_json(silent=True) or {}
-    ids = payload.get('ids')
-    visible = [x for x in center.categories if x.deleted_at is None]
-    mapping = {x.id: x for x in visible}
-    if not isinstance(ids, list) or len(ids) != len(set(ids)) or any(type(i) is not int or i not in mapping for i in ids):
-        return jsonify({'success': False, 'message': 'Vigane kategooriate järjestus.'}), 400
-    ids = ids + [x.id for x in visible if x.id not in ids]
-    for n, ident in enumerate(ids, 1): mapping[ident].sort_order = n * 10
-    log_action('categories_reordered', f'{center.name}')
-    db.session.commit()
-    return jsonify({'success': True})
-
 @app.route('/admin/meter/<int:meter_id>/edit', methods=['POST'])
 @admin_required
 def admin_edit_meter(meter_id):
@@ -910,7 +820,6 @@ def admin_edit_meter(meter_id):
         m.unit = unit
         m.resource_type = resource
         m.meter_code = request.form.get('meter_code', '').strip() or None
-        m.description = request.form.get('description', '').strip() or None
         m.sort_order = request.form.get('sort_order', m.sort_order, type=int)
         m.tariff_mode = tariff_mode
 
@@ -1022,18 +931,12 @@ with app.app_context():
             "ALTER TABLE center ADD COLUMN deleted_at TIMESTAMP"
         ))
 
-    category_columns = [column['name'] for column in inspector.get_columns('category')]
-    if 'deleted_at' not in category_columns:
-        db.session.execute(text("ALTER TABLE category ADD COLUMN deleted_at TIMESTAMP"))
-
     meter_columns = [column['name'] for column in inspector.get_columns('meter')]
 
     if 'deleted_at' not in meter_columns:
         db.session.execute(text(
             "ALTER TABLE meter ADD COLUMN deleted_at TIMESTAMP"
         ))
-    if 'description' not in meter_columns:
-        db.session.execute(text("ALTER TABLE meter ADD COLUMN description TEXT"))
 
     if 'tariff_mode' not in meter_columns:
         db.session.execute(text(
