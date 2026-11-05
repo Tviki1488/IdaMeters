@@ -852,4 +852,81 @@ document.addEventListener('DOMContentLoaded', function () {
     }, true);
 });
 </script>
+
+<script>
+// Сохраняем раскрытые разделы и положение категории при сохранении её данных.
+document.addEventListener('DOMContentLoaded', function () {
+    const restoreKey = 'forusAdminCategoryPositionRestore';
+
+    function getOpenDetails() {
+        return Array.from(document.querySelectorAll(
+            '.admin-item[open], .nested-item[open], .meter-admin[open]'
+        )).map(function (element) {
+            return element.dataset.restoreId;
+        }).filter(Boolean);
+    }
+
+    // Восстанавливаем раскрытые центр/категорию/счётчики и прежнее положение экрана.
+    try {
+        const saved = sessionStorage.getItem(restoreKey);
+        if (saved) {
+            sessionStorage.removeItem(restoreKey);
+            const state = JSON.parse(saved);
+
+            (state.openDetails || []).forEach(function (id) {
+                const element = document.querySelector(
+                    '[data-restore-id="' + id + '"]'
+                );
+                if (element) element.open = true;
+            });
+
+            const category = document.querySelector(
+                '.nested-item[data-category-id="' + state.categoryId + '"]'
+            );
+            if (category) {
+                category.open = true;
+                const center = category.closest('.admin-item');
+                if (center) center.open = true;
+            }
+
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    const summary = category
+                        ? category.querySelector(':scope > summary')
+                        : null;
+                    if (summary && Number.isFinite(state.categoryViewportTop)) {
+                        const currentTop = summary.getBoundingClientRect().top;
+                        window.scrollTo({
+                            top: Math.max(0, window.scrollY + currentTop - state.categoryViewportTop),
+                            behavior: 'auto'
+                        });
+                    } else if (Number.isFinite(state.scrollY)) {
+                        window.scrollTo({ top: state.scrollY, behavior: 'auto' });
+                    }
+                });
+            });
+        }
+    } catch (error) {
+        sessionStorage.removeItem(restoreKey);
+        console.error('Category position restoration error:', error);
+    }
+
+    // Rakendub kategooria nime/järjekorra ja kommentaari salvestamisele.
+    document.addEventListener('submit', function (event) {
+        const form = event.target;
+        if (!form.matches('.category-edit-form, .category-comment-form')) return;
+
+        const category = form.closest('.nested-item[data-category-id]');
+        if (!category) return;
+
+        const summary = category.querySelector(':scope > summary');
+        sessionStorage.setItem(restoreKey, JSON.stringify({
+            categoryId: category.dataset.categoryId,
+            categoryViewportTop: summary ? summary.getBoundingClientRect().top : 0,
+            scrollY: window.scrollY,
+            openDetails: getOpenDetails()
+        }));
+    }, true);
+});
+</script>
 {% endblock %}
