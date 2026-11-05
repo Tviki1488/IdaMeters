@@ -101,6 +101,7 @@
                                 <span class="category-drag-handle drag-handle" draggable="true" title="Lohista kategooria järjestamiseks">⠿</span>
                                 <span class="status-dot {% if not cat.active or cat.deleted_at is not none %}inactive{% endif %}"></span>
                                 <span class="admin-item-name">{{ cat.name }}</span>
+                                {% if cat.description %}<span class="meter-info-wrap"><button type="button" class="meter-info-button" aria-label="Kategooria info" title="Kategooria info" onclick="event.preventDefault();event.stopPropagation();this.nextElementSibling.hidden=!this.nextElementSibling.hidden">i</button><span class="meter-info-popover" hidden>{{ cat.description }}</span></span>{% endif %}
                                 <span class="muted">{{ cat.meters|selectattr('deleted_at', 'none')|list|length }} mõõdikut</span>
                                 <span class="chevron">⌄</span>
                             </summary>
@@ -109,23 +110,20 @@
 
                                 <form method="post"
                                       action="{{ url_for('admin_edit_category', category_id=cat.id) }}"
-                                      class="inline-create category-edit-form">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input name="name" value="{{ cat.name }}" required aria-label="Kategooria nimi">
-                                    <input name="sort_order" type="number" value="{{ cat.sort_order }}" aria-label="Järjekord">
-                                    <button class="button button-secondary button-small" type="submit">Salvesta</button>
-                                </form>
+                                      class="stack-form compact-form category-edit-form">
 
-                                <form method="post"
-                                      action="{{ url_for('admin_edit_category', category_id=cat.id) }}"
-                                      class="category-comment-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <label class="category-comment-field">
-                                        <span>Kategooria kommentaar</span>
-                                        <textarea name="comment" maxlength="2000" rows="3" placeholder="Lisa kategooria kohta oluline info, juhised või tähelepanekud...">{{ cat.comment or '' }}</textarea>
-                                        <small>Kuni 2000 märki · nähtav kategooria kasutajatele</small>
+                                    <div class="category-edit-top">
+                                        <label>Nimi<input name="name" value="{{ cat.name }}" required></label>
+                                        <label>Järjekord<input name="sort_order" type="number" value="{{ cat.sort_order }}"></label>
+                                        <button class="button button-secondary button-small" type="submit">Salvesta</button>
+                                    </div>
+                                    <label class="category-description-label">
+                                        Kategooria kommentaar / info
+                                        <textarea name="description" rows="2" maxlength="2000" placeholder="Lisa kategooria kohta oluline info, juhised või tähelepanekud...">{{ cat.description or '' }}</textarea>
                                     </label>
-                                    <button class="button button-secondary button-small" type="submit">Salvesta kommentaar</button>
+                                    <small class="muted">Valikuline · kuni 2000 märki. Nähtav kasutajatele infoikooni kaudu.</small>
+
                                 </form>
 
                                 <form method="post" action="{{ url_for('admin_archive_category', category_id=cat.id) }}">
@@ -136,7 +134,14 @@
                                 </form>
                                 <form method="post" action="{{ url_for('admin_delete_category', category_id=cat.id) }}" onsubmit="return confirm('Eemaldada kategooria aktiivsest arvestusest? Ajaloolised näidud säilivad.');">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="meter-delete-button" title="Eemalda kategooria">Kustuta</button>
+                                    <button type="submit" class="center-delete-button" title="Eemalda kategooria aktiivsest arvestusest" aria-label="Eemalda kategooria aktiivsest arvestusest">
+                                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M3 6h18"/>
+                                            <path d="M8 6V4h8v2"/>
+                                            <path d="M19 6l-1 14H6L5 6"/>
+                                            <path d="M10 11v5M14 11v5"/>
+                                        </svg>
+                                    </button>
                                 </form>
 
                                 <div class="meter-admin-list" data-category-id="{{ cat.id }}">
@@ -247,7 +252,7 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <button type="submit"
-                class="meter-delete-button"
+                class="center-delete-button"
                 title="Eemalda mõõdik aktiivsest arvestusest"
                 aria-label="Eemalda mõõdik aktiivsest arvestusest">
 
@@ -377,10 +382,6 @@
                             <label>
                                 Järjekord
                                 <input name="sort_order" type="number" value="0">
-                            </label>
-                            <label>
-                                Kategooria kommentaar (valikuline)
-                                <textarea name="comment" maxlength="2000" rows="2" placeholder="Lisa kategooria kohta oluline info või juhised..."></textarea>
                             </label>
 
                             <button class="button button-primary" type="submit">
@@ -849,83 +850,6 @@ document.addEventListener('DOMContentLoaded', function () {
             openDetails: openDetails
         }));
 
-    }, true);
-});
-</script>
-
-<script>
-// Сохраняем раскрытые разделы и положение категории при сохранении её данных.
-document.addEventListener('DOMContentLoaded', function () {
-    const restoreKey = 'forusAdminCategoryPositionRestore';
-
-    function getOpenDetails() {
-        return Array.from(document.querySelectorAll(
-            '.admin-item[open], .nested-item[open], .meter-admin[open]'
-        )).map(function (element) {
-            return element.dataset.restoreId;
-        }).filter(Boolean);
-    }
-
-    // Восстанавливаем раскрытые центр/категорию/счётчики и прежнее положение экрана.
-    try {
-        const saved = sessionStorage.getItem(restoreKey);
-        if (saved) {
-            sessionStorage.removeItem(restoreKey);
-            const state = JSON.parse(saved);
-
-            (state.openDetails || []).forEach(function (id) {
-                const element = document.querySelector(
-                    '[data-restore-id="' + id + '"]'
-                );
-                if (element) element.open = true;
-            });
-
-            const category = document.querySelector(
-                '.nested-item[data-category-id="' + state.categoryId + '"]'
-            );
-            if (category) {
-                category.open = true;
-                const center = category.closest('.admin-item');
-                if (center) center.open = true;
-            }
-
-            requestAnimationFrame(function () {
-                requestAnimationFrame(function () {
-                    const summary = category
-                        ? category.querySelector(':scope > summary')
-                        : null;
-                    if (summary && Number.isFinite(state.categoryViewportTop)) {
-                        const currentTop = summary.getBoundingClientRect().top;
-                        window.scrollTo({
-                            top: Math.max(0, window.scrollY + currentTop - state.categoryViewportTop),
-                            behavior: 'auto'
-                        });
-                    } else if (Number.isFinite(state.scrollY)) {
-                        window.scrollTo({ top: state.scrollY, behavior: 'auto' });
-                    }
-                });
-            });
-        }
-    } catch (error) {
-        sessionStorage.removeItem(restoreKey);
-        console.error('Category position restoration error:', error);
-    }
-
-    // Rakendub kategooria nime/järjekorra ja kommentaari salvestamisele.
-    document.addEventListener('submit', function (event) {
-        const form = event.target;
-        if (!form.matches('.category-edit-form, .category-comment-form')) return;
-
-        const category = form.closest('.nested-item[data-category-id]');
-        if (!category) return;
-
-        const summary = category.querySelector(':scope > summary');
-        sessionStorage.setItem(restoreKey, JSON.stringify({
-            categoryId: category.dataset.categoryId,
-            categoryViewportTop: summary ? summary.getBoundingClientRect().top : 0,
-            scrollY: window.scrollY,
-            openDetails: getOpenDetails()
-        }));
     }, true);
 });
 </script>
