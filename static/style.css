@@ -1117,3 +1117,56 @@
 .category-comment-field small { color:var(--muted); font-size:10px; font-weight:400; }
 .category-comment-form .button { align-self:flex-end; }
 @media(max-width:600px) { .category-edit-form { flex-wrap:wrap; } .category-edit-form input:first-of-type { flex:1 1 100%; } .category-comment-form { padding:10px; } .category-comment-form .button { width:100%; } }
+
+/* Category information entered in Haldus */
+.category-note-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin: 0 0 22px;
+    padding: 17px 19px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-left: 3px solid #9bcfbc;
+    border-radius: 13px;
+    box-shadow: var(--shadow);
+}
+.category-note-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: #edf4f8;
+    color: var(--navy);
+    font-size: 17px;
+    font-weight: 800;
+}
+.category-note-content { min-width: 0; }
+.category-note-eyebrow {
+    margin: 0 0 3px;
+    color: #728896;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+}
+.category-note-content h2 {
+    margin: 0 0 5px;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 750;
+}
+.category-note-text {
+    margin: 0;
+    color: #536b7a;
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+    .category-note-card { gap: 11px; margin-bottom: 17px; padding: 14px; }
+    .category-note-icon { flex-basis: 31px; width: 31px; height: 31px; }
+    .category-note-text { font-size: 12px; }
+}
