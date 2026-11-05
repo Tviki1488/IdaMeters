@@ -1091,82 +1091,174 @@
 }
 
 
-/* Forus Arvestid — ordering, meter info and compact audit log */
-.drag-handle,.meter-drag-handle{display:inline-flex;align-items:center;justify-content:center;flex:0 0 26px;width:26px;height:28px;color:#8295a1;cursor:grab;user-select:none;font-size:20px;border-radius:6px}
-.drag-handle:hover,.meter-drag-handle:hover{background:#edf3f7;color:var(--navy)}
-.is-dragging{opacity:.45}.admin-items>.admin-item,.category-sort-list>.nested-item{transition:opacity .15s}
-.meter-info-wrap{position:relative;display:inline-flex;vertical-align:middle;margin-left:6px}
-.meter-info-button{width:22px;height:22px;border:0;border-radius:50%;background:#edf3f7;color:#174a6e;font-weight:800;cursor:pointer}
-.meter-info-popover{position:absolute;z-index:30;left:0;top:27px;width:min(260px,70vw);padding:12px 14px;background:#fff;border:1px solid #d8e2eb;border-radius:10px;box-shadow:0 8px 24px #102c401f;white-space:normal;font-size:13px;line-height:1.45}
-.audit-disclosure>summary{list-style:none;cursor:pointer}.audit-disclosure>summary::-webkit-details-marker{display:none}.audit-summary{display:flex;justify-content:space-between;align-items:center}.audit-page-size{display:flex;justify-content:flex-end;margin:12px 0}.audit-page-size label{display:flex;align-items:center;gap:8px}.audit-pagination{display:flex;gap:7px;justify-content:center;align-items:center;margin:16px 0}.audit-pagination a,.audit-pagination span{min-width:34px;padding:7px 10px;text-align:center;border-radius:8px;text-decoration:none;background:#f1f5f8;color:#174a6e}.audit-pagination a.active{background:#174a6e;color:white}.history-compact-tariffs{display:flex;flex-direction:column;gap:4px}.history-compact-tariffs span,.history-compact-tariffs strong{white-space:nowrap}
-@media(max-width:600px){.drag-handle,.meter-drag-handle{width:22px;flex-basis:22px}.meter-info-popover{left:auto;right:0}.audit-summary h2{font-size:18px}}
+/* Meter information popover — responsive, contained and consistent with the app */
+.meter-info-wrap { position:relative; display:inline-flex; vertical-align:middle; margin-left:5px; z-index:5; }
+.meter-info-button {
+    display:inline-grid; place-items:center; width:28px; height:28px; padding:0;
+    border:0; border-radius:50%; background:#edf4f8; color:var(--navy);
+    font-size:15px; font-weight:800; line-height:1; cursor:pointer;
+    transition:background .15s, color .15s, box-shadow .15s;
+}
+.meter-info-button:hover, .meter-info-button[aria-expanded="true"] { background:var(--navy); color:#fff; }
+.meter-info-button:focus-visible, .meter-info-close:focus-visible { outline:2px solid var(--navy2); outline-offset:2px; }
+.meter-info-popover[hidden] { display:none !important; }
+.meter-info-popover {
+    position:absolute; top:calc(100% + 10px); left:0; display:block;
+    width:min(320px, calc(100vw - 48px)); max-width:calc(100vw - 48px);
+    max-height:min(300px, 42vh); overflow:auto; padding:14px 15px;
+    border:1px solid #dce6ec; border-radius:13px; background:#fff; color:var(--ink);
+    box-shadow:0 12px 32px rgba(21,61,89,.18); white-space:normal;
+    overflow-wrap:anywhere; z-index:100;
+}
+.meter-info-popover::before {
+    content:""; position:absolute; top:-6px; left:11px; width:11px; height:11px;
+    background:#fff; border-top:1px solid #dce6ec; border-left:1px solid #dce6ec;
+    transform:rotate(45deg);
+}
+.meter-info-popover-head {
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin-bottom:8px; color:var(--navy); font-size:13px;
+}
+.meter-info-close {
+    display:inline-grid; place-items:center; flex:0 0 26px; width:26px; height:26px;
+    padding:0; border:0; border-radius:7px; background:#f0f4f6; color:#607482;
+    font-size:19px; line-height:1; cursor:pointer;
+}
+.meter-info-close:hover { background:#e5edf2; color:var(--navy); }
+.meter-info-popover-text { display:block; color:#607482; font-size:13px; line-height:1.55; }
+.meter-card:has(.meter-info-popover:not([hidden])) { position:relative; z-index:20; }
+.meter-top, .meter-name { min-width:0; }
+@media (max-width:600px) {
+    .meter-info-wrap, .meter-name { position:static; }
+    .meter-info-popover {
+        position:fixed; top:auto; left:16px; right:16px; bottom:auto;
+        width:auto; max-width:none; max-height:min(42vh, 320px); margin-top:0;
+        border-radius:14px; padding:15px 16px; z-index:1000;
+    }
+    .meter-info-popover::before { display:none; }
+    .meter-card:has(.meter-info-popover:not([hidden])) { z-index:100; }
+}
 
-/* Kategooria kommentaar halduspaneelis */
-.category-comment-field { display:flex; flex-direction:column; gap:6px; flex:1 0 100%; margin:3px 0 0; color:var(--muted); font-size:11px; font-weight:700; }
-.category-comment-field textarea, .add-category-form textarea { width:100%; min-height:58px; resize:vertical; padding:9px 11px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); font:inherit; font-weight:400; line-height:1.45; }
-.category-comment-field textarea:focus, .add-category-form textarea:focus { outline:0; border-color:#9bb6c7; box-shadow:0 0 0 3px rgba(21,61,89,.08); }
-.category-comment-field small { color:var(--muted); font-size:10px; font-weight:400; }
-@media (max-width:640px) { .category-comment-field { flex-basis:100%; } }
+/* Category note — consistent with the Forus Arvestid cards and controls */
+.category-note-card{
+    margin:24px 0 28px;
+    padding:22px 24px;
+    background:var(--white,#fff);
+    border:1px solid var(--line,#e1e8ed);
+    border-radius:18px;
+    box-shadow:var(--shadow,0 5px 20px rgba(23,52,72,.055));
+}
+.category-note-heading{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:18px;
+    margin-bottom:16px;
+}
+.category-note-heading .eyebrow{margin:0 0 5px}
+.category-note-heading h2{
+    margin:0;
+    color:var(--ink,#182d3c);
+    font-size:19px;
+    line-height:1.3;
+    font-weight:750;
+}
+.category-note-heading .muted{
+    margin:6px 0 0;
+    color:var(--muted,#6b7c89);
+    font-size:14px;
+}
+.category-note-icon{
+    display:grid;
+    place-items:center;
+    flex:0 0 42px;
+    width:42px;
+    height:42px;
+    border-radius:13px;
+    color:var(--navy,#153d59);
+    background:#edf3f7;
+    font-size:21px;
+}
+.category-note-form textarea{
+    display:block;
+    width:100%;
+    min-height:88px;
+    padding:13px 15px;
+    resize:vertical;
+    border:1px solid var(--line,#e1e8ed);
+    border-radius:12px;
+    background:#fff;
+    color:var(--ink,#182d3c);
+    font:inherit;
+    line-height:1.5;
+    transition:border-color .18s,box-shadow .18s;
+}
+.category-note-form textarea::placeholder{color:#9aa8b2}
+.category-note-form textarea:focus{
+    outline:none;
+    border-color:var(--navy2,#1d5275);
+    box-shadow:0 0 0 3px rgba(29,82,117,.10);
+}
+.category-note-footer{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    margin-top:12px;
+}
+.category-note-footer .muted{
+    color:var(--muted,#6b7c89);
+    font-size:12px;
+}
+.category-note-footer .button{flex:0 0 auto}
+@media(max-width:600px){
+    .category-note-card{
+        margin:18px 0 22px;
+        padding:17px;
+        border-radius:16px;
+    }
+    .category-note-heading{gap:12px;margin-bottom:13px}
+    .category-note-heading h2{font-size:17px}
+    .category-note-heading .muted{font-size:13px}
+    .category-note-icon{width:38px;height:38px;flex-basis:38px;border-radius:11px}
+    .category-note-form textarea{min-height:104px;font-size:16px}
+    .category-note-footer{align-items:stretch;flex-direction:column;gap:10px}
+    .category-note-footer .button{width:100%;justify-content:center}
+}
 
-/* Category comment editor: independent full-width form below category name/order. */
-.category-edit-form { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-.category-comment-form { display:flex; flex-direction:column; align-items:stretch; gap:8px; width:100%; max-width:100%; margin:0 0 16px; padding:12px; background:#fff; border:1px solid var(--line); border-radius:10px; }
-.category-comment-field { display:flex; flex-direction:column; gap:6px; width:100%; min-width:0; margin:0; color:var(--muted); font-size:11px; font-weight:700; }
-.category-comment-field textarea { display:block; width:100%; min-width:0; min-height:76px; resize:vertical; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); font:inherit; font-size:13px; font-weight:400; line-height:1.45; }
-.category-comment-field textarea:focus { outline:0; border-color:#9bb6c7; box-shadow:0 0 0 3px rgba(21,61,89,.08); }
-.category-comment-field small { color:var(--muted); font-size:10px; font-weight:400; }
-.category-comment-form .button { align-self:flex-end; }
-@media(max-width:600px) { .category-edit-form { flex-wrap:wrap; } .category-edit-form input:first-of-type { flex:1 1 100%; } .category-comment-form { padding:10px; } .category-comment-form .button { width:100%; } }
-
-/* Category information entered in Haldus */
-.category-note-card {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    margin: 0 0 22px;
-    padding: 17px 19px;
-    background: #fff;
-    border: 1px solid var(--line);
-    border-left: 3px solid #9bcfbc;
-    border-radius: 13px;
-    box-shadow: var(--shadow);
-}
-.category-note-icon {
-    display: grid;
-    place-items: center;
-    flex: 0 0 34px;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    background: #edf4f8;
-    color: var(--navy);
-    font-size: 17px;
-    font-weight: 800;
-}
-.category-note-content { min-width: 0; }
-.category-note-eyebrow {
-    margin: 0 0 3px;
-    color: #728896;
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 1.5px;
-}
-.category-note-content h2 {
-    margin: 0 0 5px;
-    color: var(--ink);
-    font-size: 14px;
-    font-weight: 750;
-}
-.category-note-text {
-    margin: 0;
-    color: #536b7a;
-    font-size: 13px;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-}
+/* Mobile meter info: anchor the panel to the meter card, never to the viewport.
+   This avoids clipping caused by transformed/sticky ancestors in mobile Safari. */
 @media (max-width: 600px) {
-    .category-note-card { gap: 11px; margin-bottom: 17px; padding: 14px; }
-    .category-note-icon { flex-basis: 31px; width: 31px; height: 31px; }
-    .category-note-text { font-size: 12px; }
+  .meter-card:has(.meter-info-popover:not([hidden])) {
+    position: relative;
+    z-index: 120;
+  }
+  .meter-info-wrap {
+    position: static !important;
+  }
+  .meter-info-popover {
+    position: absolute !important;
+    top: 66px !important;
+    left: 13px !important;
+    right: 13px !important;
+    bottom: auto !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: min(38vh, 260px) !important;
+    margin: 0 !important;
+    padding: 14px 15px !important;
+    border: 1px solid #dce6ec;
+    border-radius: 13px;
+    box-shadow: 0 10px 28px rgba(21, 61, 89, .16);
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 130;
+  }
+  .meter-info-popover::before { display: none !important; }
+  .meter-info-popover-text {
+    display: block;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
 }
