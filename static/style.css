@@ -1607,3 +1607,62 @@
     min-height: 39px;
   }
 }
+
+
+/* Final consistency lock: every meter editor uses exactly the same full-width card,
+   regardless of resource type, tariff mode, or whether its description is empty. */
+#center-sort-list .meter-admin-list {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+#center-sort-list .meter-admin {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+#center-sort-list .meter-admin > .nested-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+  padding-left: 31px;
+}
+#center-sort-list .meter-admin > .nested-body > form.meter-editor-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-self: stretch;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  box-sizing: border-box;
+}
+#center-sort-list .meter-admin > .nested-body > form.meter-editor-card > label,
+#center-sort-list .meter-admin > .nested-body > form.meter-editor-card > .form-two,
+#center-sort-list .meter-admin > .nested-body > form.meter-editor-card > .tariff-setting,
+#center-sort-list .meter-admin > .nested-body > form.meter-editor-card > button[type="submit"] {
+  min-width: 0;
+}
+#center-sort-list .meter-admin > .nested-body > .meter-admin-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+  padding: 0 2px;
+}
+@media (max-width: 600px) {
+  #center-sort-list .meter-admin > .nested-body {
+    padding-left: 0;
+  }
+  #center-sort-list .meter-admin > .nested-body > form.meter-editor-card {
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    padding: 11px;
+  }
+}
