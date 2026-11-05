@@ -118,28 +118,25 @@
 
                                 </form>
 
-                                <div class="center-admin-actions">
-                                    <form method="post" action="{{ url_for('admin_archive_category', category_id=cat.id) }}">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button class="button button-quiet button-small" type="submit">
-                                            {% if cat.active %}Arhiveeri kategooria{% else %}Aktiveeri kategooria{% endif %}
-                                        </button>
-                                    </form>
-
-                                    <form method="post"
-                                          action="{{ url_for('admin_delete_category', category_id=cat.id) }}"
-                                          onsubmit="return confirm('Eemaldada kategooria aktiivsest arvestusest? Ajaloolised näidud säilivad.');">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="center-delete-button" title="Eemalda kategooria aktiivsest arvestusest" aria-label="Eemalda kategooria aktiivsest arvestusest">
-                                            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                <path d="M3 6h18"/>
-                                                <path d="M8 6V4h8v2"/>
-                                                <path d="M19 6l-1 14H6L5 6"/>
-                                                <path d="M10 11v5M14 11v5"/>
-                                            </svg>
-                                        </button>
-                                    </form>
-                                </div>
+                                <form method="post" action="{{ url_for('admin_archive_category', category_id=cat.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="button button-quiet button-small" type="submit">
+                                        {% if cat.active %}Arhiveeri kategooria{% else %}Aktiveeri kategooria{% endif %}
+                                    </button>
+                                </form>
+                                <form method="post"
+                                      action="{{ url_for('admin_delete_category', category_id=cat.id) }}"
+                                      onsubmit="return confirm('Eemaldada kategooria aktiivsest arvestusest? Ajaloolised näidud säilivad.');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="center-delete-button" title="Eemalda kategooria aktiivsest arvestusest" aria-label="Eemalda kategooria aktiivsest arvestusest">
+                                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M3 6h18"/>
+                                            <path d="M8 6V4h8v2"/>
+                                            <path d="M19 6l-1 14H6L5 6"/>
+                                            <path d="M10 11v5M14 11v5"/>
+                                        </svg>
+                                    </button>
+                                </form>
 
                                 <div class="meter-admin-list" data-category-id="{{ cat.id }}">
 
@@ -231,32 +228,46 @@
 
                                             </form>
 
-                                            <div class="center-admin-actions">
-                                                <form method="post" action="{{ url_for('admin_archive_meter', meter_id=m.id) }}">
-                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                    <button class="button button-quiet button-small" type="submit">
-                                                        {% if m.active %}Lõpeta kasutamine{% else %}Aktiveeri mõõdik{% endif %}
-                                                    </button>
-                                                </form>
+                                            <div class="meter-admin-actions">
 
-                                                <form method="post"
-                                                      action="{{ url_for('admin_delete_meter', meter_id=m.id) }}"
-                                                      onsubmit="return confirm('Kas oled kindel, et soovid selle mõõdiku eemaldada aktiivsest arvestusest? Mõõdik peidetakse aktiivsest loendist, kuid kõik ajaloolised näidud säilivad.');">
-                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                    <button type="submit" class="center-delete-button"
-                                                            title="Eemalda mõõdik aktiivsest arvestusest"
-                                                            aria-label="Eemalda mõõdik aktiivsest arvestusest">
-                                                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none"
-                                                             stroke="currentColor" stroke-width="1.8"
-                                                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                            <path d="M3 6h18"/>
-                                                            <path d="M8 6V4h8v2"/>
-                                                            <path d="M19 6l-1 14H6L5 6"/>
-                                                            <path d="M10 11v5M14 11v5"/>
-                                                        </svg>
-                                                    </button>
-                                                </form>
-                                            </div>
+    <form method="post"
+          action="{{ url_for('admin_archive_meter', meter_id=m.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <button class="button button-quiet button-small" type="submit">
+            {% if m.active %}Lõpeta kasutamine{% else %}Aktiveeri mõõdik{% endif %}
+        </button>
+    </form>
+
+    <form method="post"
+          action="{{ url_for('admin_delete_meter', meter_id=m.id) }}"
+          onsubmit="return confirm('Kas oled kindel, et soovid selle mõõdiku eemaldada aktiivsest arvestusest? Mõõdik peidetakse aktiivsest loendist, kuid kõik ajaloolised näidud säilivad.');">
+
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <button type="submit"
+                class="meter-delete-button"
+                title="Eemalda mõõdik aktiivsest arvestusest"
+                aria-label="Eemalda mõõdik aktiivsest arvestusest">
+
+            <svg viewBox="0 0 24 24"
+                 width="17"
+                 height="17"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="1.8"
+                 stroke-linecap="round"
+                 stroke-linejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M8 6V4h8v2"/>
+                <path d="M19 6l-1 14H6L5 6"/>
+                <path d="M10 11v5M14 11v5"/>
+            </svg>
+
+        </button>
+    </form>
+
+</div>
 
                                         </div>
 
@@ -351,7 +362,8 @@
 
                         <form method="post"
                               action="{{ url_for('admin_add_category') }}"
-                              class="add-category-form">
+                              class="add-category-form"
+                              data-center-id="{{ c.id }}">
 
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <h4>+ Lisa kategooria</h4>
@@ -510,6 +522,61 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Restore the expanded center and the category form position after adding a category.
+    const categoryRestoreKey = 'forusAdminCategoryAddRestore';
+    try {
+        const savedCategoryState = sessionStorage.getItem(categoryRestoreKey);
+        if (savedCategoryState) {
+            const state = JSON.parse(savedCategoryState);
+            sessionStorage.removeItem(categoryRestoreKey);
+
+            (state.openDetails || []).forEach(function (id) {
+                const element = document.querySelector('[data-restore-id="' + id + '"]');
+                if (element) element.open = true;
+            });
+
+            const center = document.querySelector('.admin-item[data-center-id="' + state.centerId + '"]');
+            if (center) center.open = true;
+
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    const form = document.querySelector('.add-category-form[data-center-id="' + state.centerId + '"]');
+                    if (form && Number.isFinite(state.formViewportTop)) {
+                        const targetY = window.scrollY +
+                            form.getBoundingClientRect().top - state.formViewportTop;
+                        window.scrollTo({ top: Math.max(0, targetY), behavior: 'auto' });
+                    } else if (Number.isFinite(state.scrollY)) {
+                        window.scrollTo({ top: state.scrollY, behavior: 'auto' });
+                    }
+                });
+            });
+        }
+    } catch (error) {
+        sessionStorage.removeItem(categoryRestoreKey);
+        console.error('Category position restoration error:', error);
+    }
+
+    document.querySelectorAll('.add-category-form').forEach(function (form) {
+        form.addEventListener('submit', function () {
+            const centerId = form.dataset.centerId ||
+                form.querySelector('input[name="center_id"]')?.value;
+            if (!centerId) return;
+
+            const openDetails = Array.from(document.querySelectorAll(
+                '.admin-item[open], .nested-item[open], .meter-admin[open]'
+            )).map(function (element) {
+                return element.dataset.restoreId;
+            }).filter(Boolean);
+
+            sessionStorage.setItem(categoryRestoreKey, JSON.stringify({
+                centerId: centerId,
+                formViewportTop: form.getBoundingClientRect().top,
+                scrollY: window.scrollY,
+                openDetails: openDetails
+            }));
+        });
+    });
+
     const restoreKey = 'forusAdminMeterAddRestore';
 
     // Keep the submitted category open and the add form at the same viewport position.
