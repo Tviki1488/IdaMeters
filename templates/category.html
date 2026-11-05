@@ -7,11 +7,10 @@
     <form class="period-form"><label for="period">Arvestuskuu</label><input id="period" type="month" name="period" value="{{ period }}"><button class="button button-secondary" type="submit">Ava kuu</button></form>
 </div>
 {% if category.comment %}
-<section class="category-note-card" aria-label="Kategooria info">
-    <div class="category-note-icon" aria-hidden="true">i</div>
+<section class="category-note-card" aria-label="Kategooria märkus">
+    <span class="category-note-icon" aria-hidden="true">i</span>
     <div class="category-note-content">
-        <p class="category-note-eyebrow">KATEGOORIA INFO</p>
-        <h2>Kategooria märkus</h2>
+        <p class="category-note-eyebrow">KATEGOORIA MÄRKUS</p>
         <p class="category-note-text">{{ category.comment }}</p>
     </div>
 </section>
