@@ -1396,3 +1396,214 @@
     height: 36px;
   }
 }
+
+
+/* Unified meter editor: same compact, practical visual language for every meter. */
+.meter-admin {
+  border-bottom: 1px solid var(--line);
+}
+.meter-admin > summary {
+  min-height: 46px;
+  padding: 11px 4px;
+  border-radius: 8px;
+  transition: background .15s;
+}
+.meter-admin > summary:hover {
+  background: #f8fafb;
+}
+.meter-admin[open] > summary {
+  color: var(--navy);
+}
+.meter-admin > .nested-body {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 8px 0 15px 31px;
+}
+.meter-admin > .nested-body > form.compact-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  box-shadow: 0 2px 8px rgba(23,52,72,.035);
+}
+.meter-admin > .nested-body > form.compact-form > label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  color: #607482;
+  font-size: 11px;
+  font-weight: 700;
+}
+.meter-admin > .nested-body > form.compact-form > label:nth-of-type(1),
+.meter-admin > .nested-body > form.compact-form > label:nth-of-type(2),
+.meter-admin > .nested-body > form.compact-form > label:nth-of-type(3) {
+  grid-column: 1 / -1;
+}
+.meter-admin > .nested-body > form.compact-form input,
+.meter-admin > .nested-body > form.compact-form select,
+.meter-admin > .nested-body > form.compact-form textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 39px;
+  padding: 9px 10px;
+  border: 1px solid #d8e2e8;
+  border-radius: 8px;
+  background: #fbfcfd;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+.meter-admin > .nested-body > form.compact-form textarea {
+  min-height: 66px;
+  line-height: 1.45;
+  resize: vertical;
+}
+.meter-admin > .nested-body > form.compact-form input:focus,
+.meter-admin > .nested-body > form.compact-form select:focus,
+.meter-admin > .nested-body > form.compact-form textarea:focus {
+  outline: none;
+  border-color: #8eafc1;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(21,61,89,.07);
+}
+.meter-admin > .nested-body > form.compact-form .form-two {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.meter-admin > .nested-body > form.compact-form .tariff-setting {
+  grid-column: 1 / -1;
+}
+.meter-admin > .nested-body > form.compact-form .tariff-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #f7f9fa;
+}
+.meter-admin > .nested-body > form.compact-form .tariff-toggle input {
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  padding: 0;
+}
+.meter-admin > .nested-body > form.compact-form .tariff-toggle span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.meter-admin > .nested-body > form.compact-form .tariff-toggle strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+.meter-admin > .nested-body > form.compact-form .tariff-toggle small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+.meter-admin > .nested-body > form.compact-form > button[type="submit"] {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 37px;
+}
+.meter-admin-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 0 2px;
+}
+.meter-admin-actions form {
+  display: inline-flex;
+  margin: 0;
+}
+.meter-admin-actions .meter-archive-button {
+  min-height: 35px;
+  padding: 7px 12px;
+  background: #fff;
+  border-color: #d8e2e8;
+  color: #526c7c;
+}
+.meter-admin-actions .meter-archive-button:hover {
+  background: #f4f8fa;
+  border-color: #b8cbd6;
+  color: var(--navy);
+}
+.meter-admin-actions .meter-delete-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 35px;
+  padding: 7px 12px;
+  border: 1px solid #eadbdd;
+  border-radius: 8px;
+  background: #fff;
+  color: #a65c63;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.meter-admin-actions .meter-delete-button:hover {
+  background: #fff6f5;
+  border-color: #dfc1c4;
+  color: #963d46;
+}
+@media (max-width: 600px) {
+  .meter-admin > .nested-body {
+    padding: 7px 0 13px;
+    gap: 9px;
+  }
+  .meter-admin > .nested-body > form.compact-form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 11px;
+    border-radius: 10px;
+  }
+  .meter-admin > .nested-body > form.compact-form > label,
+  .meter-admin > .nested-body > form.compact-form > label:nth-of-type(1),
+  .meter-admin > .nested-body > form.compact-form > label:nth-of-type(2),
+  .meter-admin > .nested-body > form.compact-form > label:nth-of-type(3),
+  .meter-admin > .nested-body > form.compact-form .form-two,
+  .meter-admin > .nested-body > form.compact-form .tariff-setting,
+  .meter-admin > .nested-body > form.compact-form > button[type="submit"] {
+    grid-column: 1 / -1;
+  }
+  .meter-admin > .nested-body > form.compact-form .form-two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .meter-admin > .nested-body > form.compact-form input,
+  .meter-admin > .nested-body > form.compact-form select,
+  .meter-admin > .nested-body > form.compact-form textarea {
+    font-size: 14px;
+  }
+  .meter-admin > .nested-body > form.compact-form > button[type="submit"] {
+    width: 100%;
+    min-height: 40px;
+  }
+  .meter-admin-actions {
+    gap: 7px;
+  }
+  .meter-admin-actions form {
+    flex: 1 1 auto;
+  }
+  .meter-admin-actions .meter-archive-button,
+  .meter-admin-actions .meter-delete-button {
+    width: 100%;
+    min-height: 39px;
+  }
+}
