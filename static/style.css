@@ -1265,3 +1265,134 @@
         color: #536b7a;
     }
 }
+
+
+/* Haldus category editor: consistent compact styling on desktop and mobile. */
+.category-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 13px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin: 0 0 9px;
+}
+.category-edit-top {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 88px auto;
+  align-items: end;
+  gap: 9px;
+}
+.category-edit-top label,
+.category-description-label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  color: #607482;
+  font-size: 11px;
+  font-weight: 700;
+}
+.category-edit-top input {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #d8e2e8;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 13px;
+}
+.category-description-label textarea {
+  display: block;
+  width: 100%;
+  min-height: 68px;
+  resize: vertical;
+  padding: 10px 11px;
+  border: 1px solid #d8e2e8;
+  border-radius: 8px;
+  background: #fbfcfd;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+.category-description-label textarea:focus {
+  border-color: #8eafc1;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(21, 61, 89, .07);
+}
+.category-edit-form > small {
+  display: block;
+  margin-top: -5px;
+  font-size: 11px;
+}
+.nested-body > form {
+  display: inline-flex;
+  vertical-align: middle;
+  margin: 0 7px 9px 0;
+}
+.nested-body > form .center-delete-button {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #e5dadd;
+  border-radius: 8px;
+  background: #fff;
+  color: #9b5960;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.nested-body > form .center-delete-button:hover {
+  background: #fff5f5;
+  border-color: #d9b9bd;
+}
+
+/* Mobile: same design, controls stacked for comfortable touch use. */
+@media (max-width: 600px) {
+  .category-edit-form {
+    gap: 10px;
+    padding: 11px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+  }
+  .category-edit-top {
+    grid-template-columns: minmax(0, 1fr) 76px;
+    gap: 8px;
+  }
+  .category-edit-top > button {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 39px;
+  }
+  .category-edit-top label,
+  .category-description-label {
+    font-size: 11px;
+  }
+  .category-edit-top input {
+    min-height: 40px;
+    font-size: 14px;
+  }
+  .category-description-label textarea {
+    min-height: 76px;
+    font-size: 14px;
+    padding: 10px;
+  }
+  .category-edit-form > small {
+    line-height: 1.4;
+    margin-top: -4px;
+  }
+  .nested-body > form {
+    margin: 0 6px 8px 0;
+  }
+  .nested-body > form .center-delete-button {
+    width: 38px;
+    height: 36px;
+  }
+}
