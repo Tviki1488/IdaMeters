@@ -54,7 +54,38 @@
 </form>
 
 <div class="history-table-wrap">
-    <table class="history-table">
+    
+<style>
+.dual-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+    max-width: 150px;
+}
+.dual-summary-line {
+    display: grid;
+    grid-template-columns: 48px minmax(34px, 1fr) auto;
+    align-items: center;
+    column-gap: 4px;
+    white-space: nowrap;
+    line-height: 1.35;
+}
+.dual-summary-label {
+    color: #718096;
+    white-space: nowrap;
+}
+.dual-summary-value {
+    display: block;
+    text-align: right;
+    white-space: nowrap;
+}
+.dual-summary-unit {
+    white-space: nowrap;
+}
+</style>
+
+<table class="history-table">
         <thead>
             <tr>
                 <th>Objekt</th><th>Kategooria</th><th>Mõõdik</th><th>Ressurss</th>
@@ -87,16 +118,16 @@
                 <td data-label="Ressurss">{{ r.meter.resource_type }}</td>
                 <td data-label="Praegune kokku">
                     {% if r.meter.tariff_mode == 'dual' %}
-                    <div style="display:flex;flex-direction:column;gap:6px;min-width:145px;">
-                        <div style="display:flex;align-items:center;white-space:nowrap;line-height:1.35;">
-                            <span style="display:inline-block;width:48px;flex:0 0 48px;color:#718096;">☀ Päev</span>
-                            <strong style="display:inline-block;width:66px;flex:0 0 66px;text-align:right;">{{ r.day_value|num if r.day_value is not none else '—' }}</strong>
-                            <span style="padding-left:5px;">{{ r.meter.unit }}</span>
+                    <div class="dual-summary">
+                        <div class="dual-summary-line">
+                            <span class="dual-summary-label">☀ Päev</span>
+                            <strong class="dual-summary-value">{{ r.day_value|num if r.day_value is not none else '—' }}</strong>
+                            <span class="dual-summary-unit">{{ r.meter.unit }}</span>
                         </div>
-                        <div style="display:flex;align-items:center;white-space:nowrap;line-height:1.35;">
-                            <span style="display:inline-block;width:48px;flex:0 0 48px;color:#718096;">☾ Öö</span>
-                            <strong style="display:inline-block;width:66px;flex:0 0 66px;text-align:right;">{{ r.night_value|num if r.night_value is not none else '—' }}</strong>
-                            <span style="padding-left:5px;">{{ r.meter.unit }}</span>
+                        <div class="dual-summary-line">
+                            <span class="dual-summary-label">☾ Öö</span>
+                            <strong class="dual-summary-value">{{ r.night_value|num if r.night_value is not none else '—' }}</strong>
+                            <span class="dual-summary-unit">{{ r.meter.unit }}</span>
                         </div>
                     </div>
                     {% else %}
@@ -105,16 +136,16 @@
                 </td>
                 <td data-label="Eelmine kokku">
                     {% if r.meter.tariff_mode == 'dual' %}
-                    <div style="display:flex;flex-direction:column;gap:6px;min-width:145px;">
-                        <div style="display:flex;align-items:center;white-space:nowrap;line-height:1.35;">
-                            <span style="display:inline-block;width:48px;flex:0 0 48px;color:#718096;">☀ Päev</span>
-                            <strong style="display:inline-block;width:66px;flex:0 0 66px;text-align:right;">{{ p.value.day_value|num if p.value and p.value.day_value is not none else '—' }}</strong>
-                            <span style="padding-left:5px;">{{ r.meter.unit }}</span>
+                    <div class="dual-summary">
+                        <div class="dual-summary-line">
+                            <span class="dual-summary-label">☀ Päev</span>
+                            <strong class="dual-summary-value">{{ p.value.day_value|num if p.value and p.value.day_value is not none else '—' }}</strong>
+                            <span class="dual-summary-unit">{{ r.meter.unit }}</span>
                         </div>
-                        <div style="display:flex;align-items:center;white-space:nowrap;line-height:1.35;">
-                            <span style="display:inline-block;width:48px;flex:0 0 48px;color:#718096;">☾ Öö</span>
-                            <strong style="display:inline-block;width:66px;flex:0 0 66px;text-align:right;">{{ p.value.night_value|num if p.value and p.value.night_value is not none else '—' }}</strong>
-                            <span style="padding-left:5px;">{{ r.meter.unit }}</span>
+                        <div class="dual-summary-line">
+                            <span class="dual-summary-label">☾ Öö</span>
+                            <strong class="dual-summary-value">{{ p.value.night_value|num if p.value and p.value.night_value is not none else '—' }}</strong>
+                            <span class="dual-summary-unit">{{ r.meter.unit }}</span>
                         </div>
                     </div>
                     {% else %}
