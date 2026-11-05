@@ -87,16 +87,16 @@
                 <td data-label="Ressurss">{{ r.meter.resource_type }}</td>
                 <td data-label="Eelmine kokku">
                     {% if r.meter.tariff_mode == 'dual' %}
-                    <div class="dual-reading-stack">
-                        <div class="dual-reading-line">
-                            <span class="muted small dual-reading-label">☀ Päev</span>
-                            <strong>{{ r.day_value|num if r.day_value is not none else '—' }}</strong>
-                            <span>{{ r.meter.unit }}</span>
+                    <div class="dual-reading-stack" style="display:flex;flex-direction:column;gap:5px;min-width:150px;">
+                        <div class="dual-reading-line" style="display:grid;grid-template-columns:4.5rem minmax(3.8rem,auto) auto;align-items:center;column-gap:6px;white-space:nowrap;line-height:1.45;">
+                            <span class="muted small dual-reading-label" style="width:4.5rem;display:block;">☀ Päev</span>
+                            <strong style="margin:0;text-align:left;white-space:nowrap;">{{ r.day_value|num if r.day_value is not none else '—' }}</strong>
+                            <span style="margin-left:2px;white-space:nowrap;">{{ r.meter.unit }}</span>
                         </div>
-                        <div class="dual-reading-line">
-                            <span class="muted small dual-reading-label">☾ Öö</span>
-                            <strong>{{ r.night_value|num if r.night_value is not none else '—' }}</strong>
-                            <span>{{ r.meter.unit }}</span>
+                        <div class="dual-reading-line" style="display:grid;grid-template-columns:4.5rem minmax(3.8rem,auto) auto;align-items:center;column-gap:6px;white-space:nowrap;line-height:1.45;">
+                            <span class="muted small dual-reading-label" style="width:4.5rem;display:block;">☾ Öö</span>
+                            <strong style="margin:0;text-align:left;white-space:nowrap;">{{ r.night_value|num if r.night_value is not none else '—' }}</strong>
+                            <span style="margin-left:2px;white-space:nowrap;">{{ r.meter.unit }}</span>
                         </div>
                     </div>
                     {% else %}
@@ -105,14 +105,14 @@
                 </td>
                 <td data-label="Praegune kokku">
                     {% if r.meter.tariff_mode == 'dual' %}
-                    <div class="dual-reading-stack">
-                        <div class="dual-reading-line">
-                            <span class="muted small dual-reading-label">☀ Päev</span>
-                            <strong>{{ p.value.day_value|num if p.value and p.value.day_value is not none else '—' }}</strong><span>{{ r.meter.unit }}</span>
+                    <div class="dual-reading-stack" style="display:flex;flex-direction:column;gap:5px;min-width:150px;">
+                        <div class="dual-reading-line" style="display:grid;grid-template-columns:4.5rem minmax(3.8rem,auto) auto;align-items:center;column-gap:6px;white-space:nowrap;line-height:1.45;">
+                            <span class="muted small dual-reading-label" style="width:4.5rem;display:block;">☀ Päev</span>
+                            <strong style="margin:0;text-align:left;white-space:nowrap;">{{ p.value.day_value|num if p.value and p.value.day_value is not none else '—' }}</strong><span style="margin-left:2px;white-space:nowrap;">{{ r.meter.unit }}</span>
                         </div>
-                        <div class="dual-reading-line">
-                            <span class="muted small dual-reading-label">☾ Öö</span>
-                            <strong>{{ p.value.night_value|num if p.value and p.value.night_value is not none else '—' }}</strong><span>{{ r.meter.unit }}</span>
+                        <div class="dual-reading-line" style="display:grid;grid-template-columns:4.5rem minmax(3.8rem,auto) auto;align-items:center;column-gap:6px;white-space:nowrap;line-height:1.45;">
+                            <span class="muted small dual-reading-label" style="width:4.5rem;display:block;">☾ Öö</span>
+                            <strong style="margin:0;text-align:left;white-space:nowrap;">{{ p.value.night_value|num if p.value and p.value.night_value is not none else '—' }}</strong><span style="margin-left:2px;white-space:nowrap;">{{ r.meter.unit }}</span>
                         </div>
                     </div>
                     {% else %}
